@@ -139,6 +139,24 @@
   body.fs .pad button{background:rgba(255,255,255,.93)}
   body.fs #stagePaint{height:auto; padding-top:6px}
   body.fs #paint{width:min(100vw, calc((100vh - 250px) * 1.7778)); margin:0 auto}
+
+  /* ---------- компактный режим в полном экране ---------- */
+  body.fs .hud{left:6px; top:6px; right:6px; gap:4px; font-size:10.5px; font-weight:600}
+  body.fs .pill{padding:3px 7px; border-radius:10px; gap:4px}
+  body.fs .task{padding:4px 8px; font-size:11px; border-radius:10px; line-height:1.2}
+  body.fs .task small{font-size:9px; margin-top:1px; opacity:.8}
+  body.fs .bar{width:42px; height:6px}
+  body.fs .pad{bottom:calc(2px + env(safe-area-inset-bottom)); gap:5px}
+  body.fs .pad button{
+    min-width:44px; height:40px; font-size:16px; border-radius:9px;
+    background:rgba(255,255,255,.82); box-shadow:0 2px 6px rgba(33,53,71,.18);
+  }
+  body.fs .hint{bottom:calc(50px + env(safe-area-inset-bottom)); font-size:11px; padding:4px 10px}
+  @media (max-width: 720px){
+    body.fs .pad button{min-width:40px; height:36px; font-size:15px}
+    body.fs .hud{font-size:10px}
+  }
+  body.fs .pill .lbl{display:none}
 </style>
 </head>
 <body>
@@ -167,7 +185,7 @@
     <div class="pill" id="dayPill">☀️ день</div>
     <div class="pill" id="seasonPill">🌿 лето</div>
     <div class="pill">⭐ <span id="score">0</span></div>
-    <div class="pill">Грязь <span class="bar"><i id="dirtBar"></i></span></div>
+    <div class="pill"><span class="lbl">Грязь</span> <span class="bar"><i id="dirtBar"></i></span></div>
     <div class="pill">💧 <span class="bar"><i id="waterBar"></i></span></div>
     <div class="pill">⛽ <span class="bar"><i id="fuelBar"></i></span></div>
   </div>
@@ -443,12 +461,21 @@ function startTask(i) {
 }
 function updateTaskBox() {
   var box = document.getElementById('taskBox');
-  if (!task) { box.innerHTML = 'Все задания выполнены!<small>Можно просто кататься</small>'; return; }
+  var compact = document.body.classList.contains('fs');
+  if (!task) {
+    box.innerHTML = compact ? 'Готово!' : 'Все задания выполнены!<small>Можно просто кататься</small>';
+    return;
+  }
   var left = Math.max(0, Math.round((taskTarget - camX) / 10));
   var names = [];
   for (var i = 0; i < task.animals.length; i++) names.push((ANIMALS[task.animals[i]] || {}).name || task.animals[i]);
-  box.innerHTML = 'Задание ' + (taskIdx + 1) + ' из ' + TASKS.length + ': ' + task.title +
-    '<small>до фермы ' + left + ' м · в прицепе: ' + names.join(', ') + '</small>';
+  if (compact) {
+    box.innerHTML = '№' + (taskIdx + 1) + '/' + TASKS.length + ' · ' + left + ' м' +
+      '<small>' + names.join(', ') + '</small>';
+  } else {
+    box.innerHTML = 'Задание ' + (taskIdx + 1) + ' из ' + TASKS.length + ': ' + task.title +
+      '<small>до фермы ' + left + ' м · в прицепе: ' + names.join(', ') + '</small>';
+  }
 }
 function completeTask() {
   if (!task || taskDone) return;
@@ -910,8 +937,16 @@ function update(dt) {
   document.getElementById('dirtBar').style.width = dirt + '%';
   document.getElementById('waterBar').style.width = water + '%';
   document.getElementById('fuelBar').style.width = fuel + '%';
-  document.getElementById('dayPill').textContent = light > 0.6 ? '☀️ день' : (light > 0.25 ? '🌇 вечер' : '🌙 ночь');
-  document.getElementById('seasonPill').textContent = winter > 0.5 ? '❄️ зима' : '🌿 лето';
+  var compact = document.body.classList.contains('fs');
+  var dayEl = document.getElementById('dayPill');
+  var seaEl = document.getElementById('seasonPill');
+  if (compact) {
+    dayEl.textContent = light > 0.6 ? '☀️' : (light > 0.25 ? '🌇' : '🌙');
+    seaEl.textContent = winter > 0.5 ? '❄️' : '🌿';
+  } else {
+    dayEl.textContent = light > 0.6 ? '☀️ день' : (light > 0.25 ? '🌇 вечер' : '🌙 ночь');
+    seaEl.textContent = winter > 0.5 ? '❄️ зима' : '🌿 лето';
+  }
   updateTaskBox();
 }
 
