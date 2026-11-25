@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Трактор">
-<title>Синий трактор — задания, прицеп и раскраска</title>
+<title>Синий трактор — дорога, день и ночь</title>
 <style>
   :root{ --ink:#213547; --blue:#2f6fd0; --line:#cfe3ee; }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
@@ -16,11 +16,10 @@
   body{
     background:linear-gradient(160deg,#eaf6fb 0%,#dceef8 100%);
     overscroll-behavior:none; touch-action:manipulation;
-    padding-bottom:calc(18px + env(safe-area-inset-bottom));
     color:var(--ink);
     font:16px/1.5 "Segoe UI", Roboto, system-ui, sans-serif;
     display:flex; flex-direction:column; align-items:center;
-    padding:14px 12px 18px;
+    padding:14px 12px calc(18px + env(safe-area-inset-bottom));
   }
   .tabs{display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; justify-content:center}
   .tab{
@@ -49,7 +48,7 @@
     padding:8px 14px; max-width:100%; box-shadow:0 6px 18px rgba(33,53,71,.2);
   }
   .task small{display:block; font-weight:400; opacity:.85; font-size:12.5px; margin-top:2px}
-  .bar{width:96px; height:9px; border-radius:99px; background:#d7e5ee; overflow:hidden}
+  .bar{width:88px; height:9px; border-radius:99px; background:#d7e5ee; overflow:hidden}
   .bar > i{display:block; height:100%; width:0%; background:linear-gradient(90deg,#8a6b3f,#4a3a26); transition:width .2s}
   .hint{
     position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
@@ -96,9 +95,63 @@
   }
   .foot{margin-top:12px; color:#6b8299; font-size:12.5px; text-align:center}
   kbd{background:#fff; border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; padding:1px 6px; font-size:12px}
+
+  /* ---------- стартовое меню ---------- */
+  .menu{
+    position:fixed; inset:0; z-index:60; padding:22px;
+    background:linear-gradient(160deg,#eaf6fb 0%,#cfe6f5 100%);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; text-align:center;
+  }
+  .menu.off{display:none}
+  .menu h1{margin:0; font-size:clamp(22px,5vw,38px); color:#213547; letter-spacing:.5px}
+  .menu p{margin:0; color:#5a7488; font-size:15px}
+  .menu-cards{display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:8px}
+  .card{
+    width:min(280px,42vw); min-height:158px; border-radius:22px; border:3px solid #fff;
+    background:#fff; color:#213547; font-size:36px; cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+    box-shadow:0 16px 36px rgba(33,53,71,.16); transition:transform .12s;
+    font-family:inherit;
+  }
+  .card span{font-size:20px; font-weight:700}
+  .card small{font-size:12.5px; color:#7b93a6; font-weight:400; padding:0 12px; line-height:1.3}
+  .card:active{transform:scale(.97)}
+  .menu-foot{margin-top:6px}
+  .menu-foot button{
+    border:2px solid #cfe3ee; background:#fff; border-radius:999px; padding:10px 18px;
+    font-size:14px; font-weight:600; color:#213547; cursor:pointer; font-family:inherit;
+  }
+
+  /* ---------- полный экран ---------- */
+  body.fs{padding:0; background:#0b1620; overflow:hidden}
+  body.fs .tabs, body.fs .foot, body.fs .rotate-tip{display:none}
+  body.fs .stage{width:100vw; height:100vh; display:flex; align-items:center; justify-content:center}
+  body.fs canvas{
+    width:min(100vw, calc(100vh * 1.8148));
+    height:auto; max-height:100vh;
+    border-radius:0; box-shadow:none;
+  }
+  body.fs .pad{
+    position:fixed; left:0; right:0; bottom:calc(6px + env(safe-area-inset-bottom));
+    margin:0; padding:0 6px; z-index:20;
+  }
+  body.fs .pad button{background:rgba(255,255,255,.93)}
+  body.fs #stagePaint{height:auto; padding-top:6px}
+  body.fs #paint{width:min(100vw, calc((100vh - 250px) * 1.7778)); margin:0 auto}
 </style>
 </head>
 <body>
+
+<div class="menu" id="menu">
+  <h1>Синий трактор</h1>
+  <p>Чем займёмся?</p>
+  <div class="menu-cards">
+    <button class="card" id="menuDrive">🚜<span>Поехать</span><small>задания, прицеп, мойка,<br>день и ночь, зима и лето</small></button>
+    <button class="card" id="menuPaint">🎨<span>Раскраска</span><small>трактор, прицеп<br>и коровка — заливай цветом</small></button>
+  </div>
+  <div class="menu-foot"><button id="menuFull">⛶ Во весь экран</button></div>
+</div>
 
 <div class="tabs">
   <button class="tab on" id="tabDrive">🚜 Задания</button>
@@ -111,9 +164,12 @@
   <canvas id="game" width="980" height="540"></canvas>
   <div class="hud">
     <div class="task" id="taskBox">Задание</div>
+    <div class="pill" id="dayPill">☀️ день</div>
+    <div class="pill" id="seasonPill">🌿 лето</div>
     <div class="pill">⭐ <span id="score">0</span></div>
     <div class="pill">Грязь <span class="bar"><i id="dirtBar"></i></span></div>
     <div class="pill">💧 <span class="bar"><i id="waterBar"></i></span></div>
+    <div class="pill">⛽ <span class="bar"><i id="fuelBar"></i></span></div>
   </div>
   <div class="hint" id="hint"></div>
 </div>
@@ -124,8 +180,10 @@
   <button id="btnWash">🧽 губка</button>
   <button id="btnHose">🚿 шланг</button>
   <button id="btnHorn">📣</button>
-  <button id="btnMusic">🎵</button>
+  <button id="btnFuel">⛽</button>
+  <button id="btnMusic">🔊</button>
   <button id="btnFull" title="Во весь экран">⛶</button>
+  <button id="btnMenu" title="Меню">☰</button>
 </div>
 
 <div class="stage off" id="stagePaint">
@@ -147,10 +205,12 @@
 <div class="tools off" id="tools">
   <button id="btnClear">Очистить</button>
   <button id="btnSave">Скачать PNG</button>
+  <button id="btnPaintDrive">🚜 Поехать</button>
+  <button id="btnPaintMenu">☰ Меню</button>
 </div>
 
 <div class="foot" id="foot">
-  <kbd>←</kbd> <kbd>→</kbd> — ехать · <kbd>E</kbd> — мойка · <kbd>Space</kbd> — бибикнуть
+  <kbd>←</kbd> <kbd>→</kbd> — ехать · <kbd>E</kbd> — губка · <kbd>Q</kbd> — шланг · <kbd>Space</kbd> — бибикнуть
 </div>
 
 <div class="err" id="err"></div>
@@ -175,34 +235,1369 @@ window.onerror = function (msg, src, line, col) {
   box.textContent = 'Ошибка: ' + msg + '  (строка ' + line + ':' + col + ')';
 };
 
+/* ================= утилиты ================= */
 function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+function lerp(a, b, t) { return a + (b - a) * t; }
 function hash(n) { var x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+function mixC(c1, c2, t) {
+  return [Math.round(lerp(c1[0], c2[0], t)), Math.round(lerp(c1[1], c2[1], t)), Math.round(lerp(c1[2], c2[2], t))];
+}
+function rgb(c) { return 'rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')'; }
+function rgba(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+function shade(c, k) { return [clamp(c[0] * k, 0, 255) | 0, clamp(c[1] * k, 0, 255) | 0, clamp(c[2] * k, 0, 255) | 0]; }
 
-/* ---------------- звук ---------------- */
-var AC = null;
+var cv = document.getElementById('game');
+var ctx = cv.getContext('2d');
+
+/* ================= звук ================= */
+var AC = null, masterGain = null, engine = null;
+var MUSIC = { on: true };
+
 function audio() {
   if (!AC) { var C = window.AudioContext || window.webkitAudioContext; if (C) AC = new C(); }
   if (AC && AC.state === 'suspended') AC.resume();
   return AC;
 }
-function beep(freq, dur, type, vol) {
-  var ac = audio(); if (!ac) return;
-  var o = ac.createOscillator(), g = ac.createGain();
-  o.type = type || 'sine'; o.frequency.value = freq;
-  g.gain.value = vol || 0.05;
-  o.connect(g); g.connect(ac.destination);
-  var t = ac.currentTime;
-  g.gain.setValueAtTime(g.gain.value, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  o.start(t); o.stop(t + dur + 0.02);
+function ensureMaster() {
+  var ac = audio(); if (!ac) return null;
+  if (!masterGain) {
+    masterGain = ac.createGain();
+    masterGain.gain.value = 0.6;
+    masterGain.connect(ac.destination);
+  }
+  return masterGain;
 }
-function horn() { beep(310, 0.22, 'square', 0.06); setTimeout(function () { beep(392, 0.26, 'square', 0.05); }, 130); }
-function washChime() { beep(660, 0.12, 'sine', 0.05); setTimeout(function () { beep(880, 0.16, 'sine', 0.05); }, 120); }
+function tone(freq, dur, type, vol, when, sweepTo) {
+  var ac = audio(), m = ensureMaster();
+  if (!ac || !m || !freq) return;
+  var t = (when != null) ? when : ac.currentTime;
+  var o = ac.createOscillator(), g = ac.createGain();
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(freq, t);
+  if (sweepTo) o.frequency.exponentialRampToValueAtTime(sweepTo, t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + Math.max(0.06, dur * 0.9));
+  o.connect(g); g.connect(m);
+  o.start(t); o.stop(t + dur + 0.05);
+}
+
+/* мотор: живёт постоянно, рычит по оборотам */
+function ensureEngine() {
+  var ac = audio(), m = ensureMaster();
+  if (!ac || !m || engine) return;
+  var g = ac.createGain(); g.gain.value = 0;
+  var lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 620; lp.Q.value = 4;
+  var o1 = ac.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = 44;
+  var o2 = ac.createOscillator(); o2.type = 'square'; o2.frequency.value = 22;
+  var lfo = ac.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 8.5;
+  var lfoG = ac.createGain(); lfoG.gain.value = 0.03;
+  lfo.connect(lfoG); lfoG.connect(g.gain);
+  o1.connect(lp); o2.connect(lp); lp.connect(g); g.connect(m);
+  o1.start(); o2.start(); lfo.start();
+  engine = { g: g, lp: lp, o1: o1, o2: o2 };
+}
+function updateEngine() {
+  if (!engine || !AC) return;
+  var ac = AC, rev = clamp(Math.abs(speed) / 430, 0, 1);
+  var f = 42 + rev * 40;
+  engine.o1.frequency.setTargetAtTime(f, ac.currentTime, 0.06);
+  engine.o2.frequency.setTargetAtTime(f * 0.5, ac.currentTime, 0.06);
+  engine.lp.frequency.setTargetAtTime(480 + rev * 1000, ac.currentTime, 0.09);
+  var vol = fuel > 0 ? (MUSIC.on ? (0.028 + rev * 0.055) : 0) : (MUSIC.on ? 0.006 : 0);
+  engine.g.gain.setTargetAtTime(vol, ac.currentTime, 0.09);
+}
+
+function horn() {
+  var t = audio() ? AC.currentTime : 0;
+  tone(300, 0.2, 'square', 0.07, t, 320);
+  tone(390, 0.24, 'square', 0.06, t + 0.13, 420);
+}
+function ding() { tone(880, 0.09, 'triangle', 0.05, null); }
+function washChime() { tone(660, 0.12, 'sine', 0.05); setTimeout(function () { tone(880, 0.16, 'sine', 0.05); }, 120); }
 function taskJingle() {
   var notes = [523, 659, 784, 1046];
   for (var i = 0; i < notes.length; i++) {
-    (function (f, i) { setTimeout(function () { beep(f, 0.18, 'triangle', 0.05); }, i * 110); })(notes[i], i);
+    (function (f, i) { setTimeout(function () { tone(f, 0.18, 'triangle', 0.05); }, i * 110); })(notes[i], i);
   }
+}
+/* птицы и сверчки */
+function chirp() {
+  var ac = audio(); if (!ac || !MUSIC.on || light < 0.35) return;
+  var t = ac.currentTime, n = 2 + Math.floor(Math.random() * 3);
+  for (var i = 0; i < n; i++) {
+    var f = 2300 + Math.random() * 1700;
+    tone(f, 0.07, 'sine', 0.016, t + i * 0.1, f * 1.35);
+  }
+}
+function cricket() {
+  var ac = audio(); if (!ac || !MUSIC.on || light > 0.35) return;
+  var t = ac.currentTime;
+  for (var i = 0; i < 4; i++) tone(4300, 0.03, 'square', 0.012, t + i * 0.07);
+}
+
+/* ================= земля ================= */
+var W = 980, H = 540, BASE_Y = 400, TX = 470;
+function groundY(x) {
+  return BASE_Y
+    + Math.sin(x / 640) * 44
+    + Math.sin(x / 205 + 1.3) * 12
+    + Math.sin(x / 1550 + 0.7) * 58;
+}
+function slopeAt(x) { return Math.atan2(groundY(x + 14) - groundY(x - 14), 28); }
+
+/* ================= мир ================= */
+var camX = 0, speed = 0, wheelAng = 0, time = 0;
+var dirt = 0, score = 0, water = 100;
+var spongeOn = false, hoseOn = false, spraying = false, wasClean = true;
+var spots = [], DIRT_CAP = 20;
+var lather = 0;   /* пена 0..100: сначала губкой, потом смыть */
+var fuel = 100;   /* бак: полный хватает примерно на две смены суток */
+var ptr = { x: -999, y: -999, down: false, inside: false };
+var foam = [], mud = [], sparks = [], confetti = [], snow = [];
+
+var DAY_CYCLE = 140;          // секунд на сутки
+var dayClock = DAY_CYCLE * 0.28;
+var light = 1;                // 0 ночь .. 1 день
+var phase = 0;
+var SEASON_LEN = 120;         // секунд на сезон
+var seasonClock = 0, winter = 0, wantWinter = 0;
+
+function makePuddles() {
+  var out = [];
+  for (var i = 0; i < 70; i++) out.push({ x: 700 + i * 720 + hash(i * 1.7) * 220, w: 84 + hash(i * 2.3) * 60 });
+  return out;
+}
+var PUDDLES = makePuddles();
+function makeApples() {
+  var out = [];
+  for (var i = 0; i < 90; i++) out.push({ x: 520 + i * 460 + hash(i * 4.9) * 140, taken: false });
+  return out;
+}
+var APPLES = makeApples();
+function makeWashes() {
+  var out = [];
+  for (var i = 0; i < 50; i++) out.push({ x: 1500 + i * 3400 });
+  return out;
+}
+var WASHES = makeWashes();
+function makeFuels() {
+  var out = [];
+  for (var i = 0; i < 50; i++) out.push({ x: 3200 + i * 3400 });
+  return out;
+}
+var FUELS = makeFuels();
+
+/* лес: три слоя */
+function makeTrees(count, seed, par) {
+  var out = [];
+  for (var i = 0; i < count; i++) {
+    out.push({
+      x: i * (150 - par * 60) + hash(i * 1.31 + seed) * 120,
+      s: 0.6 + hash(i * 2.7 + seed) * 0.8,
+      kind: (hash(i * 5.1 + seed) > 0.45) ? 'pine' : 'leaf',
+      par: par
+    });
+  }
+  return out;
+}
+var TREES_FAR = makeTrees(90, 3.3, 0.45);
+var TREES_MID = makeTrees(80, 7.1, 0.75);
+var TREES_NEAR = makeTrees(70, 11.7, 1.0);
+function makeBushes(count, seed) {
+  var out = [];
+  for (var i = 0; i < count; i++) out.push({ x: i * 240 + hash(i * 3.9 + seed) * 180, s: 0.5 + hash(i * 1.9 + seed) * 0.7 });
+  return out;
+}
+var BUSHES = makeBushes(60, 5.5);
+
+/* птицы и бабочки */
+var birds = [];
+for (var bi = 0; bi < 3; bi++) {
+  birds.push({ x: hash(bi) * W, y: 90 + hash(bi * 2) * 120, v: 26 + hash(bi * 3) * 26, fl: hash(bi * 5) * 6 });
+}
+var butterflies = [];
+for (var fi = 0; fi < 6; fi++) {
+  butterflies.push({ x: hash(fi * 2.1) * 900, y: 380 + hash(fi * 3.3) * 60, ph: hash(fi) * 6, v: 20 + hash(fi * 4) * 25 });
+}
+
+/* ================= задания ================= */
+var TASKS = [
+  { title: 'Отвези корову Зорьку на ферму', animals: ['cow'], distance: 2300, clean: false },
+  { title: 'Свинья и курица — на базар', animals: ['pig', 'chicken'], distance: 2500, clean: false },
+  { title: 'Овца и коза — к пастуху на холм', animals: ['sheep', 'goat'], distance: 2600, clean: false },
+  { title: 'Лошадь в конюшню. Приехать на чистых колёсах!', animals: ['horse'], distance: 2700, clean: true },
+  { title: 'Две утки и поросёнок — на пруд', animals: ['duck', 'duck', 'pig'], distance: 2800, clean: false },
+  { title: 'Финальный рейс: все на ферму', animals: ['cow', 'sheep', 'chicken'], distance: 3000, clean: false }
+];
+var taskIdx = -1, task = null, taskTarget = 0, taskDone = 0, msgTimer = 0, msgText = '';
+
+function startTask(i) {
+  taskIdx = i;
+  if (i >= TASKS.length) { task = null; taskTarget = Infinity; updateTaskBox(); say('finish'); return; }
+  task = TASKS[i];
+  taskTarget = camX + task.distance;
+  taskDone = 0;
+  say('go');
+  updateTaskBox();
+}
+function updateTaskBox() {
+  var box = document.getElementById('taskBox');
+  if (!task) { box.innerHTML = 'Все задания выполнены!<small>Можно просто кататься</small>'; return; }
+  var left = Math.max(0, Math.round((taskTarget - camX) / 10));
+  var names = [];
+  for (var i = 0; i < task.animals.length; i++) names.push((ANIMALS[task.animals[i]] || {}).name || task.animals[i]);
+  box.innerHTML = 'Задание ' + (taskIdx + 1) + ' из ' + TASKS.length + ': ' + task.title +
+    '<small>до фермы ' + left + ' м · в прицепе: ' + names.join(', ') + '</small>';
+}
+function completeTask() {
+  if (!task || taskDone) return;
+  taskDone = 1;
+  score++;
+  taskJingle();
+  say('done', true);
+  msgText = 'Задание выполнено!';
+  msgTimer = 2.2;
+  var colors = ['#f4c542', '#3fae6a', '#e05c5c', '#8fd3f4', '#ef7d4a'];
+  for (var i = 0; i < 40; i++) {
+    confetti.push({
+      x: TX - 100 + Math.random() * 260, y: groundY(camX) - 220 + Math.random() * 120,
+      vx: (Math.random() - 0.5) * 160, vy: -80 - Math.random() * 160,
+      c: colors[Math.floor(Math.random() * colors.length)], life: 1.6, rot: Math.random() * 6
+    });
+  }
+  setTimeout(function () { startTask(taskIdx + 1); }, 1400);
+}
+
+/* ================= голос ================= */
+var voiceCache = {}, lastVoiceAt = 0, saidDirty = false, saidWash = false, saidEmpty = false;
+function say(key, force) {
+  if (!MUSIC.on || !VOICES[key]) return;
+  var now = (window.performance && performance.now) ? performance.now() : Date.now();
+  if (!force && now - lastVoiceAt < 1100) return;
+  lastVoiceAt = now;
+  try {
+    if (!voiceCache[key]) { voiceCache[key] = new Audio(VOICES[key]); voiceCache[key].volume = 0.95; }
+    var a = voiceCache[key];
+    a.currentTime = 0;
+    var p = a.play();
+    if (p && p.catch) p.catch(function () {});
+  } catch (e) {}
+}
+
+/* ================= ввод ================= */
+var keys = {};
+document.addEventListener('pointerdown', function () { ensureAudio(); });
+document.addEventListener('keydown', function (e) {
+  ensureAudio();
+  keys[e.code] = true;
+  if (e.code === 'Space') { e.preventDefault(); horn(); }
+  if (e.code === 'KeyE') toggleSponge();
+  if (e.code === 'KeyQ') toggleHose();
+  if (e.code === 'KeyR') toggleNozzle();
+});
+document.addEventListener('keyup', function (e) { keys[e.code] = false; });
+
+function ensureAudio() { audio(); ensureMaster(); ensureEngine(); }
+
+function bindHold(el, on, off) {
+  el.addEventListener('mousedown', on);
+  el.addEventListener('mouseup', off);
+  el.addEventListener('mouseleave', off);
+  el.addEventListener('touchstart', function (e) { e.preventDefault(); on(); }, { passive: false });
+  el.addEventListener('touchend', function (e) { e.preventDefault(); off(); }, { passive: false });
+}
+bindHold(document.getElementById('btnLeft'), function () { keys.ArrowLeft = true; }, function () { keys.ArrowLeft = false; });
+bindHold(document.getElementById('btnRight'), function () { keys.ArrowRight = true; }, function () { keys.ArrowRight = false; });
+document.getElementById('btnWash').addEventListener('click', function () { toggleSponge(); });
+document.getElementById('btnHose').addEventListener('click', function () { toggleHose(); });
+document.getElementById('btnHorn').addEventListener('click', horn);
+document.getElementById('btnFuel').addEventListener('click', function () { toggleNozzle(); });
+document.getElementById('btnMusic').addEventListener('click', function () { ensureAudio(); toggleSound(); });
+/* ---------- меню и полный экран ---------- */
+var menuEl = document.getElementById('menu');
+var menuOpen = true, started = false;
+
+function openMenu() {
+  menuOpen = true;
+  keys = {};
+  menuEl.classList.remove('off');
+}
+function closeMenu() {
+  menuOpen = false;
+  menuEl.classList.add('off');
+}
+function enterFull() {
+  document.body.classList.add('fs');
+  var el = document.documentElement;
+  var req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (req) { try { req.call(el); } catch (e) {} }
+}
+function exitFull() {
+  document.body.classList.remove('fs');
+  var d = document;
+  if (d.fullscreenElement || d.webkitFullscreenElement) {
+    (d.exitFullscreen || d.webkitExitFullscreen || function () {}).call(d);
+  }
+}
+
+document.getElementById('btnFull').addEventListener('click', function () {
+  if (document.body.classList.contains('fs')) exitFull(); else enterFull();
+});
+document.getElementById('btnMenu').addEventListener('click', openMenu);
+document.getElementById('menuFull').addEventListener('click', enterFull);
+document.getElementById('menuDrive').addEventListener('click', function () {
+  closeMenu(); showDrive(); enterFull();
+  if (!started) { started = true; startTask(0); }
+});
+document.getElementById('menuPaint').addEventListener('click', function () {
+  closeMenu(); showPaint(); enterFull();
+});
+document.getElementById('btnPaintMenu').addEventListener('click', openMenu);
+document.getElementById('btnPaintDrive').addEventListener('click', function () {
+  closeMenu(); showDrive();
+  if (!started) { started = true; startTask(0); }
+});
+
+function cvPos(e) {
+  var r = cv.getBoundingClientRect();
+  return { x: (e.clientX - r.left) * (W / r.width), y: (e.clientY - r.top) * (H / r.height) };
+}
+cv.addEventListener('pointerdown', function (e) { var p = cvPos(e); ptr.x = p.x; ptr.y = p.y; ptr.down = true; ptr.inside = true; });
+cv.addEventListener('pointermove', function (e) { var p = cvPos(e); ptr.x = p.x; ptr.y = p.y; ptr.inside = true; });
+cv.addEventListener('pointerup', function () { ptr.down = false; });
+cv.addEventListener('pointerleave', function () { ptr.down = false; ptr.inside = false; });
+cv.addEventListener('pointercancel', function () { ptr.down = false; ptr.inside = false; });
+
+function toggleSound() {
+  MUSIC.on = !MUSIC.on;
+  var b = document.getElementById('btnMusic');
+  if (b) b.textContent = MUSIC.on ? '🔊' : '🔇';
+  updateEngine();
+}
+function syncWashButtons() {
+  var b = document.getElementById('btnWash');
+  if (b) { b.textContent = spongeOn ? '🧽 трём!' : '🧽 губка'; b.className = spongeOn ? 'on' : ''; }
+  var h = document.getElementById('btnHose');
+  if (h) { h.textContent = hoseOn ? '🚿 льём!' : '🚿 шланг'; h.className = hoseOn ? 'on' : ''; }
+}
+function toggleSponge() { spongeOn = !spongeOn; if (spongeOn) hoseOn = false; syncWashButtons(); }
+function toggleHose() { hoseOn = !hoseOn; if (hoseOn) spongeOn = false; syncWashButtons(); }
+
+/* ================= грязь ================= */
+function addDirt(amount) {
+  var need = amount;
+  for (var i = 0; i < spots.length && need > 0; i++) {
+    if (spots[i].a < 1) { var add = Math.min(1 - spots[i].a, need); spots[i].a += add; need -= add; }
+  }
+  while (need > 0 && spots.length < 26) {
+    var z = Math.random(), lx, ly;
+    if (z < 0.24) { lx = -100 + Math.random() * 148; ly = -96 + Math.random() * 40; }
+    else if (z < 0.40) { lx = -92 + Math.random() * 84; ly = -158 + Math.random() * 54; }
+    else if (z < 0.48) { lx = 48 + Math.random() * 70; ly = -92 + Math.random() * 32; }
+    else if (z < 0.60) { lx = -116 + Math.random() * 100; ly = -92 + Math.random() * 92; }
+    else if (z < 0.68) { lx = 38 + Math.random() * 72; ly = -70 + Math.random() * 70; }
+    else if (z < 0.88) { lx = -300 + Math.random() * 190; ly = -124 + Math.random() * 62; }
+    else if (z < 0.94) { lx = -290 + Math.random() * 56; ly = -58 + Math.random() * 56; }
+    else { lx = -176 + Math.random() * 56; ly = -58 + Math.random() * 56; }
+    var a = Math.min(1, need);
+    spots.push({ lx: lx, ly: ly, r: 11 + Math.random() * 13, rot: Math.random() * 3, sd: Math.random() * 10, a: a });
+    need -= a;
+  }
+  recalcDirt();
+}
+function recalcDirt() {
+  var sum = 0;
+  for (var i = 0; i < spots.length; i++) sum += spots[i].a;
+  dirt = clamp(sum * 100 / DIRT_CAP, 0, 100);
+}
+function tractorTilts() {
+  var ty = groundY(camX), ang = slopeAt(camX);
+  return { y: ty, ang: ang };
+}
+function toLocal(px, py) {
+  var t = tractorTilts(), dx = px - TX, dy = py - t.y;
+  var c = Math.cos(-t.ang), s = Math.sin(-t.ang);
+  return { x: dx * c - dy * s, y: dx * s + dy * c, ty: t.y, ang: t.ang };
+}
+function scrubAt(px, py, dt, rad, mult, isHose) {
+  var L = toLocal(px, py);
+  var radius = rad || 26;
+  var inWash = nearestWash() ? 1 : 0;
+  var power = (inWash ? 2.6 : 1.3) * dt * (mult || 1);
+  var touched = false;
+
+  for (var i = spots.length - 1; i >= 0; i--) {
+    var s = spots[i];
+    var dx = L.x - s.lx, dy = L.y - s.ly;
+    var d = Math.sqrt(dx * dx + dy * dy);
+    if (d >= radius + s.r) continue;
+    var k = 1 - d / (radius * 2.2 + s.r);
+
+    if (isHose) {
+      if (lather < 1) continue;              /* сухую грязь шлангом не смыть */
+      s.a -= power * k;
+      lather = clamp(lather - power * 7 * k, 0, 100);
+    } else {
+      var removed = Math.min(s.a, power * k);
+      s.a -= removed;
+      lather = clamp(lather + removed * 9, 0, 100);   /* грязь превращается в пену */
+    }
+    touched = true;
+    if (s.a <= 0.03) spots.splice(i, 1);
+  }
+
+  if (isHose && lather > 0) {
+    lather = clamp(lather - 16 * dt * (mult || 1), 0, 100);
+  }
+
+  if (touched) {
+    recalcDirt();
+    for (var f = 0; f < 2; f++) {
+      foam.push({ x: px + (Math.random() - 0.5) * 34, y: py + (Math.random() - 0.5) * 28,
+                  r: 3 + Math.random() * 7, vy: -18 - Math.random() * 26, life: 1 });
+    }
+  }
+
+  if (dirt <= 0.5 && lather <= 2 && !wasClean) {
+    wasClean = true;
+    washChime();
+    say('clean', true);
+    for (var sp = 0; sp < 16; sp++) {
+      sparks.push({ x: TX - 100 + Math.random() * 220, y: L.ty - 150 + Math.random() * 120,
+                    vx: (Math.random() - 0.5) * 70, vy: -30 - Math.random() * 50, life: 1 });
+    }
+  } else if (dirt > 0.5 || lather > 2) {
+    wasClean = false;
+  }
+}
+/* ---------- пистолет ---------- */
+var nozzle = false, nozzleFullSaid = false;
+
+function toggleNozzle() {
+  if (!nearestFuel()) return;
+  nozzle = !nozzle;
+  beep(nozzle ? 620 : 380, 0.07, 'square', 0.05);
+  syncFuelButton();
+}
+
+function syncFuelButton() {
+  var b = document.getElementById('btnFuel');
+  if (!b) return;
+  var t = nozzle ? '⛽ льём!' : '⛽';
+  if (b.textContent !== t) {
+    b.textContent = t;
+    b.className = nozzle ? 'on' : '';
+  }
+}
+
+function localToScreen(lx, ly) {
+  var t = tractorTilts();
+  return {
+    x: TX + lx * Math.cos(t.ang) - ly * Math.sin(t.ang),
+    y: t.y + lx * Math.sin(t.ang) + ly * Math.cos(t.ang)
+  };
+}
+
+function drawFuelHose() {
+  if (!nozzle) return;
+  var f = nearestFuel();
+  if (!f) return;
+  var gy = groundY(f.x);
+  var px = (f.x - camX + TX) + 30, py = gy - 96;
+  var cap = localToScreen(34, -74);
+
+  /* шланг дугой */
+  ctx.strokeStyle = '#2b2f35';
+  ctx.lineWidth = 6;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.quadraticCurveTo((px + cap.x) / 2, Math.max(py, cap.y) + 34, cap.x, cap.y);
+  ctx.stroke();
+  ctx.strokeStyle = '#4a5158';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  /* пистолет в баке */
+  ctx.save();
+  ctx.translate(cap.x, cap.y);
+  ctx.rotate(-0.5);
+  ctx.fillStyle = '#3a3f45';
+  ctx.beginPath(); roundRect(ctx, -4, -12, 9, 20, 3); ctx.fill();
+  ctx.fillStyle = '#c8ccd2';
+  ctx.beginPath(); roundRect(ctx, -3, -16, 7, 8, 2); ctx.fill();
+  ctx.restore();
+}
+
+function nearestFuel() {
+  for (var i = 0; i < FUELS.length; i++) if (Math.abs(camX - FUELS[i].x) < 100) return FUELS[i];
+  return null;
+}
+
+function nearestWash() {
+  for (var i = 0; i < WASHES.length; i++) if (Math.abs(camX - WASHES[i].x) < 95) return WASHES[i];
+  return null;
+}
+
+/* ================= обновление ================= */
+var birdTimer = 3, cricketTimer = 1;
+
+function update(dt) {
+  time += dt;
+
+  /* сутки */
+  dayClock += dt;
+  phase = (dayClock % DAY_CYCLE) / DAY_CYCLE;
+  var sunA = (phase - 0.25) * Math.PI * 2;
+  var alt = Math.sin(sunA);
+  light = clamp((alt + 0.16) / 1.16, 0, 1);
+
+  /* сезоны */
+  seasonClock += dt;
+  if (seasonClock >= SEASON_LEN) {
+    seasonClock = 0;
+    wantWinter = wantWinter ? 0 : 1;
+  }
+  winter += clamp(wantWinter - winter, -dt * 0.25, dt * 0.25);
+
+  /* движение */
+  var accel = 0;
+  if (keys.ArrowRight || keys.KeyD) accel += 520;
+  if (keys.ArrowLeft || keys.KeyA) accel -= 520;
+  if (fuel <= 0) accel = clamp(accel, -170, 170);   /* без топлива — только ползком */
+  speed += accel * dt;
+  speed -= speed * 2.0 * dt;
+  speed = clamp(speed, -180, 430);
+  if (fuel <= 0) speed = clamp(speed, -95, 95);
+  camX += speed * dt;
+  if (camX < 0) { camX = 0; speed = Math.max(0, speed); }
+  wheelAng += speed * dt / 42;
+  if (fuel > 0) {
+    fuel = clamp(fuel - (0.10 + 0.42 * clamp(Math.abs(speed) / 430, 0, 1)) * dt, 0, 100);
+  }
+  var fst = nearestFuel();
+  if (!fst) nozzle = false;
+  if (nozzle && fst) {
+    fuel = clamp(fuel + 30 * dt, 0, 100);
+    if (fuel >= 100 && !nozzleFullSaid) { nozzleFullSaid = true; ding(); }
+  } else {
+    nozzleFullSaid = false;
+  }
+  syncFuelButton();
+  updateEngine();
+
+  /* брызги из-под колёс */
+  if (Math.abs(speed) > 120 && Math.random() < 0.55) {
+    var g0 = groundY(camX);
+    mud.push({ x: TX + 74, y: g0 - 6, vx: -speed * 0.25 - Math.random() * 60,
+               vy: -60 - Math.random() * 90, r: 2 + Math.random() * 4, life: 1 });
+  }
+  for (var i = mud.length - 1; i >= 0; i--) {
+    var p = mud[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 520 * dt; p.life -= dt * 1.6;
+    if (p.life <= 0) mud.splice(i, 1);
+  }
+
+  /* лужи */
+  for (var j = 0; j < PUDDLES.length; j++) {
+    var pd = PUDDLES[j];
+    if (Math.abs(camX - pd.x) < pd.w * 0.5 && Math.abs(speed) > 90) {
+      addDirt(6 * dt * Math.min(1, Math.abs(speed) / 300));
+    }
+  }
+
+  /* яблоки */
+  for (var k = 0; k < APPLES.length; k++) {
+    var ap = APPLES[k];
+    if (!ap.taken && Math.abs(camX - ap.x) < 44) { ap.taken = true; ding(); }
+  }
+
+  /* мытьё */
+  spraying = false;
+  if (hoseOn && (ptr.down || ptr.inside) && ptr.inside && water > 0) {
+    spraying = true;
+    water = clamp(water - 24 * dt, 0, 100);
+    scrubAt(ptr.x, ptr.y, dt, 48, 2.8, true);
+  } else if (ptr.down && !hoseOn) {
+    scrubAt(ptr.x, ptr.y, dt, 26, 1, false);
+  }
+  if (nearestWash()) water = clamp(water + 32 * dt, 0, 100);
+
+  for (var f = foam.length - 1; f >= 0; f--) {
+    var fo = foam[f]; fo.y += fo.vy * dt; fo.vy *= 0.96; fo.life -= dt * 0.9;
+    if (fo.life <= 0) foam.splice(f, 1);
+  }
+  for (var sp = sparks.length - 1; sp >= 0; sp--) {
+    var sk = sparks[sp];
+    sk.x += sk.vx * dt; sk.y += sk.vy * dt; sk.vy += 60 * dt; sk.life -= dt * 0.8;
+    if (sk.life <= 0) sparks.splice(sp, 1);
+  }
+  for (var c = confetti.length - 1; c >= 0; c--) {
+    var cf = confetti[c];
+    cf.x += cf.vx * dt; cf.y += cf.vy * dt; cf.vy += 260 * dt; cf.rot += dt * 6; cf.life -= dt * 0.7;
+    if (cf.life <= 0) confetti.splice(c, 1);
+  }
+
+  /* снег */
+  if (winter > 0.15) {
+    if (Math.random() < winter * 1.6) {
+      snow.push({ x: Math.random() * W, y: -10, r: 1.5 + Math.random() * 2.5,
+                  vy: 26 + Math.random() * 34, vx: -8 - Math.random() * 16, life: 1 });
+    }
+    for (var sn = snow.length - 1; sn >= 0; sn--) {
+      var s2 = snow[sn];
+      s2.x += (s2.vx - speed * 0.06) * dt; s2.y += s2.vy * dt;
+      if (s2.y > groundY(camX + s2.x - TX) + 6 || s2.x < -20 || s2.x > W + 20) snow.splice(sn, 1);
+    }
+  } else if (snow.length) snow.length = 0;
+
+  /* птицы и бабочки */
+  for (var b = 0; b < birds.length; b++) {
+    var bd = birds[b];
+    bd.x += bd.v * dt;
+    if (bd.x > W + 80) { bd.x = -80; bd.y = 70 + Math.random() * 150; }
+  }
+  for (var fb = 0; fb < butterflies.length; fb++) {
+    var bt = butterflies[fb];
+    bt.x += bt.v * dt;
+    bt.ph += dt * 3;
+    if (bt.x > W + 40) { bt.x = -40; bt.y = 360 + Math.random() * 70; }
+  }
+
+  /* звуковое окружение */
+  birdTimer -= dt;
+  if (birdTimer <= 0) { chirp(); birdTimer = 4 + Math.random() * 7; }
+  cricketTimer -= dt;
+  if (cricketTimer <= 0) { cricket(); cricketTimer = 1.0 + Math.random() * 1.0; }
+
+  /* задание */
+  if (task && !taskDone && camX >= taskTarget) {
+    if (task.clean && (dirt > 15 || lather > 20)) {
+      msgText = 'Слишком грязно! Сначала на мойку';
+      msgTimer = 1.6;
+      taskTarget = camX + 260;
+      updateTaskBox();
+    } else completeTask();
+  }
+  if (msgTimer > 0) msgTimer -= dt;
+
+  /* подсказки и HUD */
+  var hint = '';
+  var fh = nearestFuel();
+  if (fuel <= 0.5 && !fh) hint = 'Топливо кончилось — ищи АЗС';
+  else if (fh && !nozzle) hint = 'Жми R — вытащить пистолет и заправиться';
+  else if (fh && nozzle && fuel < 99.5) hint = 'Льём топливо…';
+  else if (fh && nozzle && fuel >= 99.5) hint = 'Бак полный — верни пистолет (R)';
+  else if (hoseOn && water <= 0.5) hint = 'Вода кончилась — подъезжай к мойке';
+  else if (hoseOn) hint = lather > 3 ? 'Смывай пену струёй' : 'Пены нет — сначала намыль губкой';
+  else if (spongeOn) hint = dirt > 3 ? 'Намыливай губкой: грязь уходит в пену'
+                                     : (lather > 20 ? 'Теперь смой пену шлангом (Q)' : 'Блеск! Можно ехать');
+  else if (nearestWash()) hint = 'Мойка: E — губка, Q — шланг';
+  else if (dirt > 40) hint = 'Грязный! Жми E (губка) или Q (шланг)';
+  else if (!task) hint = 'Все рейсы сделаны. Катайся в своё удовольствие!';
+  setHint(hint);
+
+  if (dirt > 55 && !saidDirty) { saidDirty = true; say('dirty'); }
+  if (dirt < 20) saidDirty = false;
+  var nw = nearestWash();
+  if (nw && !saidWash) { saidWash = true; say('wash'); }
+  if (!nw) saidWash = false;
+  if (water <= 0.5 && !saidEmpty) { saidEmpty = true; say('empty'); }
+  if (water > 20) saidEmpty = false;
+
+  document.getElementById('score').textContent = score;
+  document.getElementById('dirtBar').style.width = dirt + '%';
+  document.getElementById('waterBar').style.width = water + '%';
+  document.getElementById('fuelBar').style.width = fuel + '%';
+  document.getElementById('dayPill').textContent = light > 0.6 ? '☀️ день' : (light > 0.25 ? '🌇 вечер' : '🌙 ночь');
+  document.getElementById('seasonPill').textContent = winter > 0.5 ? '❄️ зима' : '🌿 лето';
+  updateTaskBox();
+}
+
+var lastHint = null;
+function setHint(t) {
+  if (t === lastHint) return;
+  lastHint = t;
+  var el = document.getElementById('hint');
+  el.textContent = t;
+  el.className = 'hint' + (t ? ' on' : '');
+}
+
+/* лицо трактора */
+function drawFace(ctx, bx, by) {
+  var eyeY = by - 82;
+  var lx = bx + 64, rx = bx + 98, er = 13;
+  var look = clamp(speed / 320, -1, 1) * 4.5;
+  var blink = (time % 5.4) > 5.18;
+
+  // белки
+  ctx.fillStyle = '#ffffff';
+  ctx.strokeStyle = 'rgba(18,48,96,.6)';
+  ctx.lineWidth = 2.6;
+  ctx.beginPath(); ctx.arc(lx, eyeY, er, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(rx, eyeY, er, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+
+  if (blink) {
+    ctx.strokeStyle = '#1b3a52'; ctx.lineWidth = 3.6; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(lx - 8, eyeY); ctx.lineTo(lx + 8, eyeY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(rx - 8, eyeY); ctx.lineTo(rx + 8, eyeY); ctx.stroke();
+  } else {
+    ctx.fillStyle = '#1b2a3a';
+    ctx.beginPath(); ctx.arc(lx + look, eyeY + 2, 6.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(rx + look, eyeY + 2, 6.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.95)';
+    ctx.beginPath(); ctx.arc(lx + look - 2.2, eyeY - 1, 2.2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(rx + look - 2.2, eyeY - 1, 2.2, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // брови
+  ctx.strokeStyle = '#1b3a52'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(lx - 8, eyeY - 20); ctx.quadraticCurveTo(lx, eyeY - 27, lx + 8, eyeY - 20); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rx - 8, eyeY - 20); ctx.quadraticCurveTo(rx, eyeY - 27, rx + 8, eyeY - 20); ctx.stroke();
+
+  // улыбка
+  ctx.strokeStyle = '#1b3a52'; ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(bx + 68, by - 68);
+  ctx.quadraticCurveTo(bx + 81, by - 54, bx + 94, by - 68);
+  ctx.stroke();
+
+  // румянец
+  ctx.fillStyle = 'rgba(240,130,142,.42)';
+  ctx.beginPath(); ctx.ellipse(bx + 52, by - 64, 8.5, 5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(bx + 110, by - 64, 8.5, 5, 0, 0, Math.PI * 2); ctx.fill();
+}
+
+/* ================= отрисовка мира ================= */
+var skyDay = [[143, 211, 244], [232, 247, 252]];
+var skyNight = [[10, 16, 40], [32, 44, 74]];
+var grassSummer = [121, 191, 111], grassWinter = [238, 244, 250];
+var roadColor = [201, 177, 138];
+
+function drawSky() {
+  var top = mixC(skyNight[0], skyDay[0], light);
+  var bot = mixC(skyNight[1], skyDay[1], light);
+  var dusk = Math.max(0, 1 - Math.abs(light - 0.22) / 0.26);
+  top = mixC(top, [243, 152, 95], dusk * 0.55);
+  bot = mixC(bot, [255, 205, 155], dusk * 0.7);
+
+  var g = ctx.createLinearGradient(0, 0, 0, BASE_Y + 80);
+  g.addColorStop(0, rgb(top));
+  g.addColorStop(1, rgb(bot));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+
+  /* звёзды */
+  var starA = clamp(1 - light * 1.6, 0, 1);
+  if (starA > 0.02) {
+    for (var i = 0; i < 90; i++) {
+      var sx = hash(i * 1.7) * W, sy = hash(i * 3.1) * 300;
+      var tw = 0.55 + 0.45 * Math.sin(time * 2 + i);
+      ctx.globalAlpha = starA * tw;
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(sx, sy, 2, 2);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  /* солнце и луна */
+  var sunX = W * 0.5 - Math.cos((phase - 0.25) * Math.PI * 2) * W * 0.42;
+  var sunY = 300 - Math.sin((phase - 0.25) * Math.PI * 2) * 210;
+  if (light > 0.05) {
+    ctx.globalAlpha = clamp(light * 1.4, 0, 1);
+    ctx.fillStyle = '#ffe9a8';
+    ctx.beginPath(); ctx.arc(sunX, sunY, 42, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = clamp(light * 0.35, 0, 1);
+    ctx.beginPath(); ctx.arc(sunX, sunY, 62, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  if (light < 0.6) {
+    var moonX = W * 0.5 + Math.cos((phase - 0.25) * Math.PI * 2) * W * 0.4;
+    var moonY = 260 + Math.sin((phase - 0.25) * Math.PI * 2) * 170;
+    ctx.globalAlpha = clamp((0.6 - light) * 1.8, 0, 1);
+    ctx.fillStyle = '#eef3ff';
+    ctx.beginPath(); ctx.arc(moonX, moonY, 26, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = rgb(mixC(skyNight[1], skyDay[1], light));
+    ctx.beginPath(); ctx.arc(moonX + 10, moonY - 6, 22, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawHills(par, baseY, amp, col) {
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  for (var x = 0; x <= W; x += 24) {
+    var y = baseY + Math.sin((x + camX * par) / (320 / par)) * amp;
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(W, H);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function treeColor(kind, k) {
+  var summer = kind === 'pine' ? [46, 110, 68] : [92, 154, 74];
+  var winterC = [226, 238, 246];
+  return rgb(mixC(shade(summer, k), winterC, winter));
+}
+
+function drawTree(x, y, s, kind, par) {
+  if (x < -90 || x > W + 90) return;
+  var h = 64 * s;
+  /* ствол */
+  ctx.fillStyle = rgb(mixC([122, 90, 58], [110, 96, 86], winter));
+  ctx.fillRect(x - 3 * s, y - h * 0.35, 6 * s, h * 0.4);
+  if (kind === 'pine') {
+    for (var i = 0; i < 3; i++) {
+      var w = (26 - i * 6) * s, yy = y - h * 0.3 - i * h * 0.24;
+      ctx.fillStyle = treeColor('pine', 0.85 + i * 0.12);
+      ctx.beginPath();
+      ctx.moveTo(x, yy - h * 0.42);
+      ctx.lineTo(x + w, yy);
+      ctx.lineTo(x - w, yy);
+      ctx.closePath();
+      ctx.fill();
+      if (winter > 0.25) {
+        ctx.fillStyle = 'rgba(255,255,255,' + (winter * 0.85) + ')';
+        ctx.beginPath();
+        ctx.moveTo(x, yy - h * 0.42);
+        ctx.lineTo(x + w * 0.55, yy - h * 0.12);
+        ctx.lineTo(x - w * 0.55, yy - h * 0.12);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+  } else {
+    var r = 20 * s;
+    ctx.fillStyle = treeColor('leaf', 1);
+    ctx.beginPath();
+    ctx.arc(x, y - h * 0.62, r, 0, Math.PI * 2);
+    ctx.arc(x - r * 0.8, y - h * 0.45, r * 0.75, 0, Math.PI * 2);
+    ctx.arc(x + r * 0.8, y - h * 0.45, r * 0.75, 0, Math.PI * 2);
+    ctx.fill();
+    if (winter > 0.3) {
+      ctx.fillStyle = 'rgba(255,255,255,' + (winter * 0.75) + ')';
+      ctx.beginPath();
+      ctx.arc(x, y - h * 0.68, r * 0.7, Math.PI, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function drawBush(x, y, s) {
+  if (x < -60 || x > W + 60) return;
+  var r = 15 * s;
+  ctx.fillStyle = rgb(mixC(shade([104, 168, 88], 0.95), [232, 242, 248], winter));
+  ctx.beginPath();
+  ctx.arc(x, y - r * 0.6, r, 0, Math.PI * 2);
+  ctx.arc(x - r * 0.9, y - r * 0.2, r * 0.8, 0, Math.PI * 2);
+  ctx.arc(x + r * 0.9, y - r * 0.2, r * 0.8, 0, Math.PI * 2);
+  ctx.fill();
+  if (winter > 0.3) {
+    ctx.fillStyle = 'rgba(255,255,255,' + (winter * 0.8) + ')';
+    ctx.beginPath();
+    ctx.arc(x, y - r * 0.85, r * 0.8, Math.PI, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawGroundAndRoad() {
+  var grassC = mixC(grassSummer, grassWinter, winter);
+  var g = ctx.createLinearGradient(0, BASE_Y - 120, 0, H);
+  g.addColorStop(0, rgb(shade(grassC, 1.06)));
+  g.addColorStop(1, rgb(shade(grassC, 0.82)));
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  for (var x = 0; x <= W; x += 6) ctx.lineTo(x, groundY(camX + x - TX));
+  ctx.lineTo(W, H);
+  ctx.closePath();
+  ctx.fill();
+
+  /* дорога полосой по кривой */
+  ctx.beginPath();
+  for (var x2 = 0; x2 <= W; x2 += 6) {
+    var y2 = groundY(camX + x2 - TX);
+    if (x2 === 0) ctx.moveTo(x2, y2); else ctx.lineTo(x2, y2);
+  }
+  ctx.lineWidth = 36;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = rgb(mixC(roadColor, [236, 240, 246], winter * 0.7));
+  ctx.stroke();
+
+  /* разметка-пунктир */
+  ctx.beginPath();
+  for (var x3 = 0; x3 <= W; x3 += 6) {
+    var y3 = groundY(camX + x3 - TX) + 4;
+    if (x3 === 0) ctx.moveTo(x3, y3); else ctx.lineTo(x3, y3);
+  }
+  ctx.setLineDash([16, 26]);
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = rgba([255, 255, 255], 0.32);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawPuddles() {
+  for (var i = 0; i < PUDDLES.length; i++) {
+    var p = PUDDLES[i];
+    var sx = p.x - camX + TX;
+    if (sx < -200 || sx > W + 200) continue;
+    var y = groundY(p.x) - 2;
+    var wdest = winter > 0.5 ? 0.25 : 1;
+    ctx.fillStyle = winter > 0.5 ? 'rgba(226,238,246,.9)' : '#5a4630';
+    ctx.globalAlpha = wdest;
+    ctx.beginPath(); ctx.ellipse(sx, y, p.w * 0.5, 12, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+    if (winter < 0.5) {
+      ctx.fillStyle = 'rgba(170,150,120,.5)';
+      ctx.beginPath(); ctx.ellipse(sx - p.w * 0.1, y - 3, p.w * 0.2, 4, 0, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+function drawApples() {
+  for (var i = 0; i < APPLES.length; i++) {
+    var a = APPLES[i];
+    if (a.taken) continue;
+    var sx = a.x - camX + TX;
+    if (sx < -60 || sx > W + 60) continue;
+    var ay = groundY(a.x) - 30;
+    ctx.fillStyle = '#e0453f';
+    ctx.beginPath(); ctx.arc(sx, ay, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.55)';
+    ctx.beginPath(); ctx.arc(sx - 3, ay - 4, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#5a3b1f'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(sx, ay - 9); ctx.lineTo(sx + 2, ay - 15); ctx.stroke();
+  }
+}
+
+function drawWashStation() {
+  for (var i = 0; i < WASHES.length; i++) {
+    var w = WASHES[i];
+    var sx = w.x - camX + TX;
+    if (sx < -460 || sx > W + 460) continue;
+    var gy = groundY(w.x);
+    var left = sx - 160, right = sx + 160, top = gy - 250;
+
+    ctx.fillStyle = '#4f8fb8';
+    ctx.fillRect(left, top, 16, 250);
+    ctx.fillRect(right - 16, top, 16, 250);
+    ctx.fillStyle = '#3b82e0';
+    ctx.beginPath(); roundRect(ctx, left - 20, top - 30, (right - left) + 40, 34, 12); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 21px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('МОЙКА', sx, top - 7);
+
+    for (var b = 0; b < 3; b++) {
+      var bx = sx - 66 + b * 66, by = gy - 120;
+      ctx.fillStyle = '#e05c8a';
+      ctx.beginPath(); ctx.arc(bx, by, 22, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#c94673'; ctx.lineWidth = 3;
+      for (var q = 0; q < 8; q++) {
+        var a = q * Math.PI / 4 + (spongeOn || ptr.down ? time * 4 : 0);
+        ctx.beginPath();
+        ctx.moveTo(bx + Math.cos(a) * 9, by + Math.sin(a) * 9);
+        ctx.lineTo(bx + Math.cos(a) * 24, by + Math.sin(a) * 24);
+        ctx.stroke();
+      }
+    }
+    ctx.fillStyle = 'rgba(120,190,220,.35)';
+    ctx.fillRect(left, gy - 6, right - left, 10);
+  }
+}
+
+function drawFuelStation() {
+  for (var i = 0; i < FUELS.length; i++) {
+    var f = FUELS[i];
+    var sx = f.x - camX + TX;
+    if (sx < -440 || sx > W + 440) continue;
+    var gy = groundY(f.x);
+    var left = sx - 130, right = sx + 130, top = gy - 220;
+
+    ctx.fillStyle = '#e8eef4';
+    ctx.beginPath(); roundRect(ctx, left - 14, top - 30, (right - left) + 28, 28, 9); ctx.fill();
+    ctx.fillStyle = '#2f6fd0';
+    ctx.beginPath(); roundRect(ctx, left - 14, top - 8, (right - left) + 28, 9, 4); ctx.fill();
+    ctx.fillStyle = '#213547';
+    ctx.font = 'bold 18px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('АЗС', sx, top - 9);
+
+    ctx.fillStyle = '#9aa7b4';
+    ctx.fillRect(left, top - 6, 12, 226);
+    ctx.fillRect(right - 12, top - 6, 12, 226);
+
+    /* колонка */
+    ctx.fillStyle = '#f4c542';
+    ctx.beginPath(); roundRect(ctx, sx - 36, gy - 104, 72, 104, 9); ctx.fill();
+    ctx.fillStyle = '#213547';
+    ctx.beginPath(); roundRect(ctx, sx - 26, gy - 92, 52, 34, 4); ctx.fill();
+    ctx.fillStyle = '#8fd3f4';
+    ctx.beginPath(); roundRect(ctx, sx - 21, gy - 87, 42, 24, 3); ctx.fill();
+
+    if (nozzle) {
+      ctx.fillStyle = '#213547';
+      ctx.font = 'bold 15px "Segoe UI", sans-serif';
+      ctx.fillText(Math.round(fuel) + '%', sx, gy - 70);
+    }
+
+    ctx.fillStyle = 'rgba(120,140,160,.28)';
+    ctx.fillRect(left, gy - 6, right - left, 10);
+  }
+}
+
+function drawFarm() {
+  if (!task) return;
+  var sx = taskTarget - camX + TX;
+  if (sx < -420 || sx > W + 420) return;
+  var gy = groundY(taskTarget);
+  ctx.fillStyle = '#c9563f';
+  ctx.beginPath(); roundRect(ctx, sx - 104, gy - 150, 208, 150, 6); ctx.fill();
+  ctx.fillStyle = '#a8452f';
+  ctx.beginPath();
+  ctx.moveTo(sx - 120, gy - 148);
+  ctx.lineTo(sx, gy - 216);
+  ctx.lineTo(sx + 120, gy - 148);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#f2e4c9';
+  ctx.beginPath(); roundRect(ctx, sx - 38, gy - 110, 76, 110, 4); ctx.fill();
+  ctx.strokeStyle = '#b7864f'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(sx, gy - 110); ctx.lineTo(sx, gy); ctx.stroke();
+  ctx.strokeStyle = '#7a6a55'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(sx + 92, gy - 214); ctx.lineTo(sx + 92, gy - 266); ctx.stroke();
+  var fl = Math.sin(time * 3) * 4;
+  ctx.fillStyle = '#f4c542';
+  ctx.beginPath();
+  ctx.moveTo(sx + 92, gy - 266);
+  ctx.lineTo(sx + 130 + fl, gy - 256);
+  ctx.lineTo(sx + 92, gy - 244);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.92)';
+  ctx.beginPath(); roundRect(ctx, sx - 44, gy - 194, 88, 26, 6); ctx.fill();
+  ctx.fillStyle = '#213547';
+  ctx.font = 'bold 15px "Segoe UI", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('ФЕРМА', sx, gy - 176);
+}
+
+function drawBirds() {
+  if (light < 0.35) return;
+  for (var i = 0; i < birds.length; i++) {
+    var b = birds[i];
+    var flap = Math.sin(time * 9 + b.fl) * 6;
+    ctx.strokeStyle = 'rgba(40,50,60,.75)';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(b.x - 9, b.y + flap);
+    ctx.quadraticCurveTo(b.x - 4, b.y - 4, b.x, b.y);
+    ctx.quadraticCurveTo(b.x + 4, b.y - 4, b.x + 9, b.y + flap);
+    ctx.stroke();
+  }
+}
+
+function drawButterflies() {
+  if (winter > 0.35 || light < 0.3) return;
+  for (var i = 0; i < butterflies.length; i++) {
+    var b = butterflies[i];
+    var y = b.y + Math.sin(b.ph) * 10;
+    var flap = Math.abs(Math.sin(b.ph * 2)) * 5 + 3;
+    ctx.fillStyle = i % 2 ? '#f4c542' : '#ef7d4a';
+    ctx.beginPath(); ctx.ellipse(b.x - flap * 0.6, y, flap, 4, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(b.x + flap * 0.6, y, flap, 4, 0, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawSnow() {
+  for (var i = 0; i < snow.length; i++) {
+    var s = snow[i];
+    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function drawLather() {
+  if (lather < 1) return;
+  var k = clamp(lather / 55, 0.2, 1);
+  var n = Math.round(16 + lather * 0.95);
+  for (var i = 0; i < n; i++) {
+    var lx = -322 + hash(i * 3.11) * 452;
+    var ly = -206 + hash(i * 7.73) * 196;
+    var r = 11 + hash(i * 5.37) * 19;
+    ctx.fillStyle = 'rgba(255,255,255,' + (0.40 * k + 0.26) + ')';
+    ctx.beginPath(); ctx.arc(lx, ly, r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(228,245,255,' + (0.26 * k) + ')';
+    ctx.beginPath(); ctx.arc(lx - r * 0.28, ly - r * 0.28, r * 0.55, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+function blob(ctx, x, y, r, seed) {
+  var lobes = 5;
+  ctx.beginPath();
+  for (var i = 0; i < lobes; i++) {
+    var a = i * Math.PI * 2 / lobes + seed;
+    var rr = r * (0.55 + hash(seed * 1.3 + i * 2.1) * 0.6);
+    var cx = x + Math.cos(a) * r * 0.45;
+    var cy = y + Math.sin(a) * r * 0.4;
+    ctx.moveTo(cx + rr, cy);
+    ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+  }
+  ctx.fill();
+}
+
+function drawWheelMud() {
+  if (dirt < 16) return;
+  var k = clamp(dirt / 100, 0, 1);
+  var wheels = [
+    [-66, -50, 50, 1], [72, -36, 36, 2],
+    [-264, -30, 30, 3], [-146, -30, 30, 4]
+  ];
+  for (var w = 0; w < wheels.length; w++) {
+    var cx = wheels[w][0], cy = wheels[w][1], rr = wheels[w][2], seed = wheels[w][3];
+    var n = Math.round(5 + 8 * k);
+    for (var i = 0; i < n; i++) {
+      var ang = hash(seed * 13.7 + i * 3.3) * Math.PI * 2;
+      var dist = rr * (0.82 + hash(i * 5.1 + seed) * 0.3);
+      var px = cx + Math.cos(ang) * dist;
+      var py = cy + Math.sin(ang) * dist;
+      var br = 4 + hash(i * 7.9 + seed) * 7 * (0.6 + k);
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = C_DIRT_D;
+      blob(ctx, px, py, br, i + seed * 10);
+      ctx.fillStyle = C_DIRT;
+      blob(ctx, px - 1, py - 1, br * 0.72, i + seed * 10 + 2.2);
+    }
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawSpots() {
+  for (var i = 0; i < spots.length; i++) {
+    var s = spots[i];
+    var a = clamp(s.a, 0, 1);
+    var r = s.r * (0.75 + 0.35 * a);
+    var sd = s.sd || i;
+
+    ctx.globalAlpha = 0.62 + 0.36 * a;
+    ctx.fillStyle = C_DIRT_D;
+    blob(ctx, s.lx, s.ly, r * 1.12, sd);
+
+    ctx.fillStyle = C_DIRT;
+    blob(ctx, s.lx, s.ly, r * 0.85, sd + 3.3);
+
+    ctx.globalAlpha = (0.5 + 0.4 * a) * 0.55;
+    ctx.fillStyle = C_DIRT_L;
+    blob(ctx, s.lx - r * 0.22, s.ly - r * 0.26, r * 0.34, sd + 7.1);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawParticles() {
+  for (var i = 0; i < mud.length; i++) {
+    var p = mud[i];
+    ctx.globalAlpha = clamp(p.life, 0, 1);
+    ctx.fillStyle = C_DIRT;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  for (var f = 0; f < foam.length; f++) {
+    var fo = foam[f];
+    ctx.globalAlpha = clamp(fo.life, 0, 1) * 0.85;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(fo.x, fo.y, fo.r, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(160,205,230,.9)'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.arc(fo.x, fo.y, fo.r, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  for (var s = 0; s < sparks.length; s++) {
+    ctx.globalAlpha = clamp(sparks[s].life, 0, 1);
+    ctx.fillStyle = '#ffe9a8';
+    star(ctx, sparks[s].x, sparks[s].y, 4);
+  }
+  ctx.globalAlpha = 1;
+  for (var c = 0; c < confetti.length; c++) {
+    var cf = confetti[c];
+    ctx.globalAlpha = clamp(cf.life, 0, 1);
+    ctx.save();
+    ctx.translate(cf.x, cf.y); ctx.rotate(cf.rot);
+    ctx.fillStyle = cf.c;
+    ctx.fillRect(-4, -2.5, 8, 5);
+    ctx.restore();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function star(ctx, x, y, r) {
+  ctx.beginPath();
+  for (var i = 0; i < 8; i++) {
+    var a = i * Math.PI / 4;
+    var rr = i % 2 ? r * 0.4 : r;
+    ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+  }
+  ctx.closePath(); ctx.fill();
+}
+
+function drawSponge() {
+  if (!spongeOn || ptr.x < 0) return;
+  ctx.save();
+  ctx.translate(ptr.x + 16, ptr.y + 12);
+  ctx.rotate(-0.35);
+  ctx.fillStyle = '#f4d35e';
+  ctx.beginPath(); roundRect(ctx, -30, -16, 60, 32, 9); ctx.fill();
+  ctx.fillStyle = '#e0b93c';
+  ctx.beginPath(); roundRect(ctx, -30, 4, 60, 12, 6); ctx.fill();
+  ctx.fillStyle = '#5fa8d3';
+  ctx.beginPath(); roundRect(ctx, -30, -18, 60, 10, 5); ctx.fill();
+  ctx.restore();
+}
+
+function drawJet() {
+  if (!spraying || ptr.x < 0) return;
+  var t = tractorTilts();
+  var nx = TX + Math.cos(t.ang) * 120 + Math.sin(t.ang) * -70;
+  var ny = t.y + Math.sin(t.ang) * 120 + Math.cos(t.ang) * -70;
+
+  var g = ctx.createLinearGradient(nx, ny, ptr.x, ptr.y);
+  g.addColorStop(0, 'rgba(200,235,255,.95)');
+  g.addColorStop(1, 'rgba(120,200,240,.45)');
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = g;
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.moveTo(nx, ny);
+  ctx.quadraticCurveTo((nx + ptr.x) / 2, Math.min(ny, ptr.y) - 22, ptr.x, ptr.y);
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.7)';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(150,210,240,.25)';
+  ctx.beginPath(); ctx.ellipse(ptr.x, groundY(camX + ptr.x - TX) - 4, 34, 7, 0, 0, Math.PI * 2); ctx.fill();
+}
+
+function drawHeadlights() {
+  var t = tractorTilts();
+  var nightK = clamp(1 - light * 1.7, 0, 1);
+  if (nightK < 0.05) return;
+  ctx.save();
+  ctx.translate(TX, t.y);
+  ctx.rotate(t.ang);
+  ctx.globalCompositeOperation = 'lighter';
+  var g = ctx.createLinearGradient(110, -74, 460, -120);
+  g.addColorStop(0, 'rgba(255,240,180,' + (0.5 * nightK) + ')');
+  g.addColorStop(1, 'rgba(255,240,180,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(108, -82);
+  ctx.lineTo(470, -190);
+  ctx.lineTo(500, -40);
+  ctx.lineTo(108, -62);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawNightOverlay() {
+  var k = clamp(1 - light, 0, 1);
+  if (k < 0.03) return;
+  ctx.fillStyle = 'rgba(12,20,48,' + (k * 0.5) + ')';
+  ctx.fillRect(0, 0, W, H);
+}
+
+function render() {
+  ctx.clearRect(0, 0, W, H);
+  drawSky();
+  drawHills(0.18, 330, 26, rgba(mixC([150, 190, 170], [200, 214, 226], winter), 0.55));
+  drawHills(0.42, 378, 22, rgba(mixC([122, 176, 128], [214, 228, 238], winter), 0.8));
+
+  /* дальний лес */
+  for (var i = 0; i < TREES_FAR.length; i++) {
+    var tf = TREES_FAR[i];
+    var fx = tf.x - camX * tf.par;
+    fx = ((fx % (W + 240)) + W + 240) % (W + 240) - 120;
+    drawTree(fx, 372 + Math.sin((fx + camX * 0.18) / 300) * 10, tf.s * 0.8, tf.kind, 0.45);
+  }
+
+  drawGroundAndRoad();
+
+  /* средний лес (за дорогой) */
+  for (var j = 0; j < TREES_MID.length; j++) {
+    var tm = TREES_MID[j];
+    var mx = tm.x - camX * tm.par + TX * (1 - tm.par);
+    if (mx < -100 || mx > W + 100) continue;
+    var my = groundY(camX * tm.par + mx - TX * (1 - tm.par)) - 8;
+    drawTree(mx, my - 6, tm.s, tm.kind, tm.par);
+  }
+
+  drawPuddles();
+  drawWashStation();
+  drawFuelStation();
+  drawFarm();
+  drawApples();
+
+  /* прицеп и трактор */
+  var t = tractorTilts();
+  ctx.save();
+  ctx.translate(TX, t.y);
+  ctx.rotate(t.ang);
+  drawTrailer(ctx, 0, 0, wheelAng, task ? task.animals : []);
+  drawSmokePuff();
+  drawTractor(ctx, 0, 0, wheelAng, 0);
+  drawSpots();
+  drawWheelMud();
+  drawLather();
+  ctx.restore();
+
+  /* ближний лес и кусты перед дорогой */
+  for (var k = 0; k < BUSHES.length; k++) {
+    var bu = BUSHES[k];
+    var bx = bu.x - camX + TX;
+    if (bx < -60 || bx > W + 60) continue;
+    drawBush(bx, groundY(camX + bx - TX) + 14, bu.s);
+  }
+  for (var m = 0; m < TREES_NEAR.length; m++) {
+    var tn = TREES_NEAR[m];
+    var nx2 = tn.x - camX + TX;
+    if (nx2 < -100 || nx2 > W + 100) continue;
+    if (Math.abs(nx2 - TX) < 150) continue;
+    drawTree(nx2, groundY(camX + nx2 - TX) + 10, tn.s, tn.kind, 1);
+  }
+
+  drawBirds();
+  drawButterflies();
+  drawParticles();
+  drawSnow();
+  drawNightOverlay();
+  drawHeadlights();
+  drawFuelHose();
+  drawJet();
+  drawSponge();
+
+  if (msgTimer > 0) {
+    ctx.save();
+    ctx.globalAlpha = clamp(msgTimer, 0, 1);
+    ctx.fillStyle = 'rgba(33,53,71,.86)';
+    ctx.beginPath(); roundRect(ctx, W / 2 - 210, 250, 420, 62, 16); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 24px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(msgText, W / 2, 290);
+    ctx.restore();
+  }
+  ctx.textAlign = 'left';
+}
+
+function drawSmokePuff() {
+  var puff = (time * 1.3) % 1;
+  ctx.globalAlpha = 0.3 * (1 - puff);
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  ctx.arc(26, -234 - puff * 44, 7 + puff * 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalAlpha = 1;
 }
 
 /* ---------------- цвета ---------------- */
@@ -370,7 +1765,6 @@ function drawTractor(ctx, bx, by, ang, dirt) {
   ctx.beginPath(); ctx.ellipse(bx - 20, by + 4, 135, 13, 0, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 
-  wheel(ctx, rearX, rearY, rearR, ang, 10);
   wheel(ctx, frontX, frontY, frontR, ang * 1.4, 6);
 
   ctx.fillStyle = C_BODY_D;
@@ -448,11 +1842,14 @@ function drawTractor(ctx, bx, by, ang, dirt) {
   ctx.lineTo(bx + 6, by - 226);
   ctx.closePath(); ctx.fill();
 
+  /* большое заднее колесо — снаружи, поверх корпуса и кабины */
+  ctx.strokeStyle = '#3a3f45'; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(bx - 90, by - 58); ctx.lineTo(bx - 90, by - 30); ctx.stroke();
+  wheel(ctx, rearX, rearY, rearR, ang, 10);
+
   ctx.strokeStyle = C_BODY_D; ctx.lineWidth = 8;
   ctx.beginPath(); ctx.arc(rearX, rearY, rearR + 10, Math.PI * 1.02, Math.PI * 1.98); ctx.stroke();
 
-  ctx.strokeStyle = '#3a3f45'; ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.moveTo(bx - 90, by - 58); ctx.lineTo(bx - 90, by - 30); ctx.stroke();
 
   // пятна грязи теперь отдельные объекты — рисуются в drawDirtSpots()
 
@@ -463,8 +1860,8 @@ function drawTrailer(ctx, bx, by, ang, animals) {
   var frontX = bx - 108;
   var bodyR = frontX + 14;
   var bodyL = bodyR - 214;
-  var bodyTop = by - 132;
-  var bodyBottom = by - 62;
+  var bodyTop = by - 124;
+  var bodyBottom = by - 58;
 
   ctx.strokeStyle = '#3a3f45'; ctx.lineWidth = 7; ctx.lineCap = 'round';
   ctx.beginPath();
@@ -481,9 +1878,22 @@ function drawTrailer(ctx, bx, by, ang, animals) {
   ctx.fill();
   ctx.restore();
 
+  /* животные — до борта: борт закроет им ноги */
+  if (animals && animals.length) {
+    var n = animals.length;
+    var inner = (bodyR - bodyL) - 26;
+    var slot = inner / n;
+    var s = Math.min(1.28, slot / 60);
+    for (var i = 0; i < n; i++) {
+      var ax = bodyL + 13 + slot * (i + 0.5);
+      drawAnimal(ctx, animals[i], ax, bodyTop - 6, s);
+    }
+  }
+
   ctx.fillStyle = '#4a5058';
   ctx.beginPath(); roundRect(ctx, bodyL - 8, bodyBottom - 6, (bodyR - bodyL) + 16, 12, 5); ctx.fill();
 
+  /* непрозрачный кузов */
   var wg = ctx.createLinearGradient(0, bodyTop, 0, bodyBottom);
   wg.addColorStop(0, C_WOOD); wg.addColorStop(1, C_WOOD_D);
   ctx.fillStyle = wg;
@@ -497,24 +1907,6 @@ function drawTrailer(ctx, bx, by, ang, animals) {
   ctx.beginPath(); ctx.moveTo(bodyL + 2, bodyTop + 10); ctx.lineTo(bodyR - 2, bodyTop + 10); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(bodyL + 2, bodyBottom - 10); ctx.lineTo(bodyR - 2, bodyBottom - 10); ctx.stroke();
 
-  if (animals && animals.length) {
-    var n = animals.length;
-    var usable = (bodyR - bodyL) - 30;
-    var slot = usable / n;
-    var base = n === 1 ? 1.35 : (n === 2 ? 1.1 : (n === 3 ? 0.9 : 0.74));
-    var s = Math.min(base, slot / 74);
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(bodyL + 2, bodyTop - 220, (bodyR - bodyL) - 4, 220 + 34);
-    ctx.clip();
-    for (var i = 0; i < n; i++) {
-      var ax = bodyL + 15 + slot * (i + 0.5);
-      drawAnimal(ctx, animals[i], ax, bodyTop + 14, s);
-    }
-    ctx.restore();
-  }
-
-  // верхний борт — поверх животных, чтобы лапы уходили за него
   ctx.fillStyle = '#d9a662';
   ctx.beginPath(); roundRect(ctx, bodyL - 4, bodyTop - 8, (bodyR - bodyL) + 8, 14, 6); ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,.28)';
@@ -527,918 +1919,7 @@ function drawTrailer(ctx, bx, by, ang, animals) {
   ctx.beginPath(); roundRect(ctx, bodyL - 6, bodyBottom - 22, 7, 10, 3); ctx.fill();
 }
 
-/* ---------------- мир ---------------- */
-var cv = document.getElementById('game');
-var ctx = cv.getContext('2d');
-var W = cv.width, H = cv.height;
-var GROUND = 442;
 
-var camX = 0, speed = 0, wheelAng = 0;
-var dirt = 0, score = 0, time = 0;
-var spots = [];                 // пятна грязи как объекты
-var DIRT_CAP = 20;              // столько «единиц» грязи = 100%
-var spongeOn = false, hoseOn = false, water = 100, spraying = false;
-var wasClean = true;
-var ptr = { x: -999, y: -999, down: false, inside: false };
-var foam = [];
-var TRACTOR_X = 470;
-
-var mud = [], bubbles = [], sparks = [], confetti = [];
-
-function puddles() {
-  var out = [];
-  for (var i = 0; i < 70; i++) out.push({ x: 800 + i * 760 + hash(i * 1.7) * 240, w: 90 + hash(i * 2.3) * 70 });
-  return out;
-}
-var PUDDLES = puddles();
-
-function apples() {
-  var out = [];
-  for (var i = 0; i < 90; i++) out.push({ x: 560 + i * 470 + hash(i * 4.9) * 140, taken: false, y: GROUND - 34 - hash(i * 3.1) * 36 });
-  return out;
-}
-var APPLES = apples();
-
-function washes() {
-  var out = [];
-  for (var i = 0; i < 50; i++) out.push({ x: 1500 + i * 2600 });
-  return out;
-}
-var WASHES = washes();
-
-/* ---------------- задания ---------------- */
-var TASKS = [
-  { title: 'Отвези корову Зорьку на ферму', animals: ['cow'], distance: 2300, clean: false },
-  { title: 'Свинья и курица — на базар', animals: ['pig', 'chicken'], distance: 2500, clean: false },
-  { title: 'Овца и коза — к пастуху на холм', animals: ['sheep', 'goat'], distance: 2600, clean: false },
-  { title: 'Лошадь в конюшню. Приехать на чистом!', animals: ['horse'], distance: 2700, clean: true },
-  { title: 'Две утки и поросёнок — на пруд', animals: ['duck', 'duck', 'pig'], distance: 2800, clean: false },
-  { title: 'Финальный рейс: все на ферму', animals: ['cow', 'sheep', 'chicken'], distance: 3000, clean: false }
-];
-
-var taskIdx = -1, task = null, taskTarget = 0, taskDone = 0, msgTimer = 0, msgText = '';
-
-function startTask(i) {
-  taskIdx = i;
-  if (i >= TASKS.length) { task = null; taskTarget = Infinity; updateTaskBox(); say('finish'); return; }
-  say('go');
-  task = TASKS[i];
-  taskTarget = camX + task.distance;
-  taskDone = 0;
-  updateTaskBox();
-}
-
-function updateTaskBox() {
-  var box = document.getElementById('taskBox');
-  if (!task) {
-    box.innerHTML = 'Все задания выполнены!<small>Можно просто кататься</small>';
-    return;
-  }
-  var left = Math.max(0, Math.round((taskTarget - camX) / 10));
-  var names = [];
-  for (var i = 0; i < task.animals.length; i++) {
-    names.push((ANIMALS[task.animals[i]] || {}).name || task.animals[i]);
-  }
-  box.innerHTML = 'Задание ' + (taskIdx + 1) + ' из ' + TASKS.length + ': ' + task.title +
-    '<small>до фермы ' + left + ' м · в прицепе: ' + names.join(', ') + '</small>';
-}
-
-function completeTask() {
-  if (!task || taskDone) return;
-  taskDone = 1;
-  score += 1;
-  taskJingle();
-  say('done', true);
-  msgText = 'Задание выполнено!';
-  msgTimer = 2.2;
-  var colors = ['#f4c542', '#3fae6a', '#e05c5c', '#8fd3f4', '#ef7d4a'];
-  for (var i = 0; i < 40; i++) {
-    confetti.push({
-      x: TRACTOR_X - 100 + Math.random() * 260,
-      y: GROUND - 200 + Math.random() * 120,
-      vx: (Math.random() - 0.5) * 160,
-      vy: -80 - Math.random() * 160,
-      c: colors[Math.floor(Math.random() * colors.length)],
-      life: 1.6, rot: Math.random() * 6
-    });
-  }
-  setTimeout(function () { startTask(taskIdx + 1); }, 1400);
-}
-
-/* ---------------- голос трактора ---------------- */
-var voiceCache = {};
-var lastVoiceAt = 0;
-var saidDirty = false, saidWash = false, saidEmpty = false;
-
-function say(key, force) {
-  if (!MUSIC.on) return;
-  var uri = VOICES[key];
-  if (!uri) return;
-  var now = (window.performance && performance.now) ? performance.now() : Date.now();
-  if (!force && now - lastVoiceAt < 1100) return;
-  lastVoiceAt = now;
-  try {
-    if (!voiceCache[key]) {
-      voiceCache[key] = new Audio(uri);
-      voiceCache[key].volume = 0.95;
-    }
-    var a = voiceCache[key];
-    a.currentTime = 0;
-    var p = a.play();
-    if (p && p.catch) p.catch(function () {});
-  } catch (e) {}
-}
-
-/* ---------------- весёлая мелодия ---------------- */
-var masterGain = null;
-function ensureMaster() {
-  var ac = audio(); if (!ac) return null;
-  if (!masterGain) {
-    masterGain = ac.createGain();
-    masterGain.gain.value = 0.5;
-    masterGain.connect(ac.destination);
-  }
-  return masterGain;
-}
-
-function tone(freq, at, dur, type, vol) {
-  var ac = AC, m = ensureMaster();
-  if (!ac || !m || !freq) return;
-  var o = ac.createOscillator(), g = ac.createGain();
-  o.type = type || 'triangle';
-  o.frequency.value = freq;
-  g.gain.setValueAtTime(0.0001, at);
-  g.gain.exponentialRampToValueAtTime(vol, at + 0.03);
-  g.gain.exponentialRampToValueAtTime(0.0001, at + Math.max(0.1, dur * 0.85));
-  o.connect(g); g.connect(m);
-  o.start(at); o.stop(at + dur + 0.06);
-}
-
-var NOTE = {
-  C3: 130.81, D3: 146.83, F3: 174.61, G3: 196.00, A3: 220.00,
-  C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00, C6: 1046.50
-};
-
-// 4 такта по 4 доли: фигура вверх по C → D → C, потом «качели» вниз
-var MELODY = [
-  ['C5', 0.5], ['E5', 0.5], ['G5', 0.5], ['E5', 0.5],
-  ['C5', 0.5], ['E5', 0.5], ['G5', 0.5], ['E5', 0.5],
-
-  ['D5', 0.5], ['F5', 0.5], ['A5', 0.5], ['F5', 0.5],
-  ['D5', 0.5], ['F5', 0.5], ['A5', 0.5], ['F5', 0.5],
-
-  ['E5', 0.5], ['G5', 0.5], ['C6', 0.5], ['G5', 0.5],
-  ['E5', 0.5], ['G5', 0.5], ['C6', 0.5], ['G5', 0.5],
-
-  ['A5', 0.5], ['G5', 0.5], ['F5', 0.5], ['E5', 0.5],
-  ['D5', 0.5], ['E5', 0.5], ['C5', 1.0]
-];
-
-// бас «полькой»: тоника-квинта на каждую долю
-var BASS = [
-  ['C3', 'G3', 'C3', 'G3'],
-  ['D3', 'A3', 'D3', 'A3'],
-  ['C3', 'G3', 'C3', 'G3'],
-  ['C3', 'G3', 'C3', 'G3']
-];
-
-var MUSIC = { on: true, beat: 60 / 140, mi: 0, bi: 0, bbeat: 0, nextM: 0, nextB: 0, started: false, timer: null };
-
-function ensureMusic() {
-  var ac = audio(); if (!ac) return;
-  ensureMaster();
-  if (MUSIC.started) return;
-  MUSIC.started = true;
-  MUSIC.nextM = ac.currentTime + 0.15;
-  MUSIC.nextB = ac.currentTime + 0.15;
-  MUSIC.mi = 0;
-  MUSIC.bi = 0;
-  MUSIC.bbeat = 0;
-  MUSIC.timer = setInterval(pumpMusic, 60);
-}
-
-function pumpMusic() {
-  var ac = AC; if (!ac) return;
-  if (!MUSIC.on) { MUSIC.nextM = ac.currentTime; MUSIC.nextB = ac.currentTime; return; }
-
-  var horizon = ac.currentTime + 0.3;
-  var guard = 0;
-  while (MUSIC.nextM < horizon && guard++ < 64) {
-    var it = MELODY[MUSIC.mi % MELODY.length];
-    var dur = it[1] * MUSIC.beat;
-    if (it[0]) tone(NOTE[it[0]], MUSIC.nextM, dur, 'triangle', 0.065);
-    MUSIC.nextM += dur;
-    MUSIC.mi++;
-  }
-  guard = 0;
-  while (MUSIC.nextB < horizon && guard++ < 32) {
-    var barIdx = Math.floor(MUSIC.bbeat / 4) % BASS.length;
-    var pos = MUSIC.bbeat % 4;
-    var nm = BASS[barIdx][pos];
-    tone(NOTE[nm], MUSIC.nextB, MUSIC.beat * 0.85, 'sine', 0.055);
-    if (pos === 1 || pos === 3) chick(MUSIC.nextB);
-    MUSIC.nextB += MUSIC.beat;
-    MUSIC.bbeat++;
-  }
-}
-
-var noiseBuf = null;
-function chick(at) {
-  var ac = AC, m = ensureMaster();
-  if (!ac || !m) return;
-  if (!noiseBuf) {
-    var len = Math.floor(ac.sampleRate * 0.08);
-    noiseBuf = ac.createBuffer(1, len, ac.sampleRate);
-    var data = noiseBuf.getChannelData(0);
-    for (var i = 0; i < len; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / len);
-  }
-  var src = ac.createBufferSource();
-  src.buffer = noiseBuf;
-  var bp = ac.createBiquadFilter();
-  bp.type = 'bandpass';
-  bp.frequency.value = 2400;
-  bp.Q.value = 1.1;
-  var g = ac.createGain();
-  g.gain.setValueAtTime(0.045, at);
-  g.gain.exponentialRampToValueAtTime(0.0001, at + 0.07);
-  src.connect(bp); bp.connect(g); g.connect(m);
-  src.start(at); src.stop(at + 0.09);
-}
-
-function syncMusicButton() {
-  var b = document.getElementById('btnMusic');
-  if (b) b.textContent = MUSIC.on ? '🎵' : '🔇';
-}
-
-function toggleMusic() {
-  MUSIC.on = !MUSIC.on;
-  if (MUSIC.on) ensureMusic();
-  syncMusicButton();
-}
-
-/* ---------------- ввод ---------------- */
-var keys = {};
-document.addEventListener('pointerdown', function () { ensureMusic(); });
-
-document.addEventListener('keydown', function (e) {
-  ensureMusic();
-  keys[e.code] = true;
-  if (e.code === 'Space') { e.preventDefault(); horn(); }
-  if (e.code === 'KeyE') toggleSponge();
-  if (e.code === 'KeyQ') toggleHose();
-});
-document.addEventListener('keyup', function (e) { keys[e.code] = false; });
-
-function bindHold(el, on, off) {
-  el.addEventListener('mousedown', on);
-  el.addEventListener('mouseup', off);
-  el.addEventListener('mouseleave', off);
-  el.addEventListener('touchstart', function (e) { e.preventDefault(); on(); }, { passive: false });
-  el.addEventListener('touchend', function (e) { e.preventDefault(); off(); }, { passive: false });
-}
-bindHold(document.getElementById('btnLeft'), function () { keys.ArrowLeft = true; }, function () { keys.ArrowLeft = false; });
-bindHold(document.getElementById('btnRight'), function () { keys.ArrowRight = true; }, function () { keys.ArrowRight = false; });
-document.getElementById('btnWash').addEventListener('click', function () { toggleSponge(); });
-document.getElementById('btnHose').addEventListener('click', function () { toggleHose(); });
-
-document.getElementById('btnFull').addEventListener('click', function () {
-  var d = document, el = d.documentElement;
-  var isFull = d.fullscreenElement || d.webkitFullscreenElement;
-  if (isFull) {
-    (d.exitFullscreen || d.webkitExitFullscreen || function () {}).call(d);
-  } else {
-    var req = el.requestFullscreen || el.webkitRequestFullscreen;
-    if (req) { try { req.call(el); } catch (e) {} }
-  }
-  if (screen.orientation && screen.orientation.lock) {
-    try { screen.orientation.lock('landscape').catch(function () {}); } catch (e) {}
-  }
-});
-
-function cvPos(e) {
-  var r = cv.getBoundingClientRect();
-  return { x: (e.clientX - r.left) * (W / r.width), y: (e.clientY - r.top) * (H / r.height) };
-}
-cv.addEventListener('pointerdown', function (e) {
-  var p = cvPos(e); ptr.x = p.x; ptr.y = p.y; ptr.down = true; ptr.inside = true;
-});
-cv.addEventListener('pointermove', function (e) {
-  var p = cvPos(e); ptr.x = p.x; ptr.y = p.y; ptr.inside = true;
-});
-cv.addEventListener('pointerup', function () { ptr.down = false; });
-cv.addEventListener('pointerleave', function () { ptr.down = false; ptr.inside = false; });
-cv.addEventListener('pointercancel', function () { ptr.down = false; ptr.inside = false; });
-document.getElementById('btnHorn').addEventListener('click', horn);
-document.getElementById('btnMusic').addEventListener('click', function () { ensureMusic(); toggleMusic(); });
-
-/* ---------------- логика ---------------- */
-function nearestWash() {
-  for (var i = 0; i < WASHES.length; i++) if (Math.abs(camX - WASHES[i].x) < 95) return WASHES[i];
-  return null;
-}
-
-function syncWashButtons() {
-  var b = document.getElementById('btnWash');
-  if (b) {
-    b.textContent = spongeOn ? '🧽 трём!' : '🧽 губка';
-    b.className = spongeOn ? 'on' : '';
-  }
-  var h = document.getElementById('btnHose');
-  if (h) {
-    h.textContent = hoseOn ? '🚿 льём!' : '🚿 шланг';
-    h.className = hoseOn ? 'on' : '';
-  }
-}
-
-function toggleSponge() {
-  spongeOn = !spongeOn;
-  if (spongeOn) hoseOn = false;
-  syncWashButtons();
-}
-
-function toggleHose() {
-  hoseOn = !hoseOn;
-  if (hoseOn) spongeOn = false;
-  syncWashButtons();
-}
-
-function addDirt(amount) {
-  var need = amount;
-  for (var i = 0; i < spots.length && need > 0; i++) {
-    if (spots[i].a < 1) {
-      var add = Math.min(1 - spots[i].a, need);
-      spots[i].a += add;
-      need -= add;
-    }
-  }
-  while (need > 0 && spots.length < 26) {
-    var z = Math.random(), x, y;
-    if (z < 0.45) {
-      x = TRACTOR_X - 100 + Math.random() * 148; y = GROUND - 96 + Math.random() * 40;
-    } else if (z < 0.7) {
-      x = TRACTOR_X - 92 + Math.random() * 84; y = GROUND - 158 + Math.random() * 54;
-    } else if (z < 0.88) {
-      x = TRACTOR_X - 110 + Math.random() * 90; y = GROUND - 88 + Math.random() * 42;
-    } else {
-      x = TRACTOR_X + 42 + Math.random() * 76; y = GROUND - 92 + Math.random() * 32;
-    }
-    var a = Math.min(1, need);
-    spots.push({ x: x, y: y, r: 7 + Math.random() * 9, rot: Math.random() * 3, a: a });
-    need -= a;
-  }
-  recalcDirt();
-}
-
-function recalcDirt() {
-  var sum = 0;
-  for (var i = 0; i < spots.length; i++) sum += spots[i].a;
-  dirt = clamp(sum * 100 / DIRT_CAP, 0, 100);
-}
-
-function scrubAt(px, py, dt, rad, mult) {
-  var radius = rad || 26;
-  var power = (nearestWash() ? 2.6 : 1.3) * dt * (mult || 1);
-  var touched = false;
-  for (var i = spots.length - 1; i >= 0; i--) {
-    var s = spots[i];
-    var dx = px - s.x, dy = py - s.y;
-    var d = Math.sqrt(dx * dx + dy * dy);
-    if (d < radius + s.r) {
-      touched = true;
-      s.a -= power * (1 - d / (radius * 2.2 + s.r));
-      if (s.a <= 0.03) spots.splice(i, 1);
-    }
-  }
-  if (!touched) return;
-
-  recalcDirt();
-  for (var k = 0; k < 2; k++) {
-    foam.push({
-      x: px + (Math.random() - 0.5) * 34,
-      y: py + (Math.random() - 0.5) * 28,
-      r: 3 + Math.random() * 7,
-      vy: -18 - Math.random() * 26,
-      life: 1
-    });
-  }
-  if (dirt <= 0.5 && !wasClean) {
-    wasClean = true;
-    washChime();
-    say('clean', true);
-    for (var sp = 0; sp < 16; sp++) {
-      sparks.push({
-        x: TRACTOR_X - 100 + Math.random() * 220, y: GROUND - 150 + Math.random() * 120,
-        vx: (Math.random() - 0.5) * 70, vy: -30 - Math.random() * 50, life: 1
-      });
-    }
-  } else if (dirt > 0.5) {
-    wasClean = false;
-  }
-}
-
-function update(dt) {
-  time += dt;
-
-  var accel = 0;
-  if (keys.ArrowRight || keys.KeyD) accel += 520;
-  if (keys.ArrowLeft || keys.KeyA) accel -= 520;
-
-  speed += accel * dt;
-  speed -= speed * 2.0 * dt;
-  speed = clamp(speed, -180, 430);
-  camX += speed * dt;
-  if (camX < 0) { camX = 0; speed = Math.max(0, speed); }
-  wheelAng += speed * dt / 42;
-
-  if (Math.abs(speed) > 120 && Math.random() < 0.55) {
-    mud.push({
-      x: TRACTOR_X + 74, y: GROUND - 6,
-      vx: -speed * 0.25 - Math.random() * 60, vy: -60 - Math.random() * 90,
-      r: 2 + Math.random() * 4, life: 1
-    });
-  }
-  for (var i = mud.length - 1; i >= 0; i--) {
-    var p = mud[i];
-    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 520 * dt; p.life -= dt * 1.6;
-    if (p.life <= 0) mud.splice(i, 1);
-  }
-
-  for (var j = 0; j < PUDDLES.length; j++) {
-    var pd = PUDDLES[j];
-    if (Math.abs(camX - pd.x) < pd.w * 0.5 && Math.abs(speed) > 90) {
-      addDirt(6 * dt * Math.min(1, Math.abs(speed) / 300));
-    }
-  }
-
-  for (var k = 0; k < APPLES.length; k++) {
-    var ap = APPLES[k];
-    if (!ap.taken && Math.abs(camX - ap.x) < 44) {
-      ap.taken = true;
-      beep(880, 0.08, 'triangle', 0.05);
-    }
-  }
-
-  spraying = false;
-  if (hoseOn && (ptr.down || ptr.inside) && ptr.inside && water > 0) {
-    spraying = true;
-    water = clamp(water - 24 * dt, 0, 100);
-    scrubAt(ptr.x, ptr.y, dt, 48, 2.8);
-  } else if (ptr.down && !hoseOn) {
-    scrubAt(ptr.x, ptr.y, dt);
-  }
-  if (nearestWash()) water = clamp(water + 32 * dt, 0, 100);
-  for (var f = foam.length - 1; f >= 0; f--) {
-    var fo = foam[f];
-    fo.y += fo.vy * dt; fo.vy *= 0.96; fo.life -= dt * 0.9;
-    if (fo.life <= 0) foam.splice(f, 1);
-  }
-  for (var b = bubbles.length - 1; b >= 0; b--) {
-    var bb = bubbles[b]; bb.y += bb.vy * dt; bb.life -= dt * 0.55;
-    if (bb.life <= 0) bubbles.splice(b, 1);
-  }
-  for (var sp = sparks.length - 1; sp >= 0; sp--) {
-    var sk = sparks[sp];
-    sk.x += sk.vx * dt; sk.y += sk.vy * dt; sk.vy += 60 * dt; sk.life -= dt * 0.8;
-    if (sk.life <= 0) sparks.splice(sp, 1);
-  }
-  for (var c = confetti.length - 1; c >= 0; c--) {
-    var cf = confetti[c];
-    cf.x += cf.vx * dt; cf.y += cf.vy * dt; cf.vy += 260 * dt; cf.rot += dt * 6; cf.life -= dt * 0.7;
-    if (cf.life <= 0) confetti.splice(c, 1);
-  }
-
-  if (task && !taskDone && camX >= taskTarget) {
-    if (task.clean && dirt > 30) {
-      msgText = 'Слишком грязно! Сначала на мойку';
-      msgTimer = 1.6;
-      taskTarget = camX + 260;
-      updateTaskBox();
-    } else {
-      completeTask();
-    }
-  }
-  if (msgTimer > 0) msgTimer -= dt;
-
-  var hint = '';
-  if (hoseOn && water <= 0.5) hint = 'Вода кончилась — подъезжай к мойке';
-  else if (hoseOn) hint = dirt > 3 ? 'Держи и лей — струя смывает пятна' : 'Блеск! Можно ехать';
-  else if (spongeOn) hint = dirt > 3 ? 'Води губкой по пятнам' : 'Блеск! Можно ехать';
-  else if (nearestWash()) hint = 'E — губка, Q — шланг';
-  else if (dirt > 40) hint = 'Грязный! Жми E (губка) или Q (шланг)';
-  else if (!task) hint = 'Все рейсы сделаны. Катайся в своё удовольствие!';
-  setHint(hint);
-
-  if (dirt > 55 && !saidDirty) { saidDirty = true; say('dirty'); }
-  if (dirt < 20) saidDirty = false;
-  var nw = nearestWash();
-  if (nw && !saidWash) { saidWash = true; say('wash'); }
-  if (!nw) saidWash = false;
-  if (water <= 0.5 && !saidEmpty) { saidEmpty = true; say('empty'); }
-  if (water > 20) saidEmpty = false;
-
-  document.getElementById('score').textContent = score;
-  document.getElementById('dirtBar').style.width = dirt + '%';
-  document.getElementById('waterBar').style.width = water + '%';
-  updateTaskBox();
-}
-
-var lastHint = null;
-function setHint(t) {
-  if (t === lastHint) return;
-  lastHint = t;
-  var el = document.getElementById('hint');
-  el.textContent = t;
-  el.className = 'hint' + (t ? ' on' : '');
-}
-
-/* ---------------- фон ---------------- */
-function drawSky() {
-  var g = ctx.createLinearGradient(0, 0, 0, GROUND);
-  g.addColorStop(0, '#8fd3f4'); g.addColorStop(1, '#e8f7fc');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, GROUND + 2);
-
-  ctx.fillStyle = '#ffe9a8';
-  ctx.beginPath(); ctx.arc(850, 92, 46, 0, Math.PI * 2); ctx.fill();
-  ctx.globalAlpha = 0.22;
-  ctx.beginPath(); ctx.arc(850, 92, 66, 0, Math.PI * 2); ctx.fill();
-  ctx.globalAlpha = 1;
-
-  for (var i = 0; i < 8; i++) {
-    var cx = ((i * 330 - camX * 0.12) % (W + 320) + W + 320) % (W + 320) - 160;
-    var cy = 60 + hash(i) * 120;
-    var s = 0.7 + hash(i * 2.1) * 0.6;
-    ctx.fillStyle = 'rgba(255,255,255,.92)';
-    ctx.beginPath();
-    ctx.arc(cx, cy, 27 * s, 0, Math.PI * 2);
-    ctx.arc(cx + 30 * s, cy - 10 * s, 33 * s, 0, Math.PI * 2);
-    ctx.arc(cx + 66 * s, cy, 25 * s, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
-
-function drawHills() {
-  ctx.fillStyle = '#a9d9a0';
-  ctx.beginPath(); ctx.moveTo(0, GROUND);
-  for (var x = 0; x <= W; x += 40) ctx.lineTo(x, 306 + Math.sin((x + camX * 0.15) / 260) * 40);
-  ctx.lineTo(W, GROUND); ctx.closePath(); ctx.fill();
-
-  ctx.fillStyle = '#8ecb86';
-  ctx.beginPath(); ctx.moveTo(0, GROUND);
-  for (var x2 = 0; x2 <= W; x2 += 30) ctx.lineTo(x2, 356 + Math.sin((x2 + camX * 0.30) / 170) * 24);
-  ctx.lineTo(W, GROUND); ctx.closePath(); ctx.fill();
-}
-
-function drawField() {
-  for (var i = 0; i < 30; i++) {
-    var fx = ((i * 200 - camX * 0.55) % (W + 420) + W + 420) % (W + 420) - 210;
-    ctx.fillStyle = '#c8a878';
-    ctx.fillRect(fx, GROUND - 96, 12, 66);
-    ctx.fillStyle = '#d8bb8f';
-    ctx.fillRect(fx, GROUND - 92, 12, 10);
-  }
-
-  ctx.fillStyle = '#c9b18a';
-  ctx.fillRect(0, GROUND - 26, W, 26);
-  ctx.fillStyle = '#79bf6f';
-  ctx.fillRect(0, GROUND, W, H - GROUND);
-
-  for (var g = 0; g < 80; g++) {
-    var gx = ((g * 120 - camX) % (W + 200) + W + 200) % (W + 200) - 100;
-    ctx.strokeStyle = 'rgba(60,120,60,.45)'; ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(gx, GROUND + 26); ctx.lineTo(gx + 4, GROUND + 12);
-    ctx.moveTo(gx + 8, GROUND + 26); ctx.lineTo(gx + 5, GROUND + 14);
-    ctx.stroke();
-  }
-}
-
-function drawPuddles() {
-  for (var i = 0; i < PUDDLES.length; i++) {
-    var p = PUDDLES[i];
-    var sx = p.x - camX + TRACTOR_X;
-    if (sx < -320 || sx > W + 320) continue;
-    ctx.fillStyle = '#5a4630';
-    ctx.beginPath(); ctx.ellipse(sx, GROUND - 4, p.w * 0.5, 13, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(170,150,120,.5)';
-    ctx.beginPath(); ctx.ellipse(sx - p.w * 0.12, GROUND - 7, p.w * 0.2, 5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(90,70,48,.8)';
-    for (var k = 0; k < 5; k++) {
-      ctx.beginPath(); ctx.arc(sx - p.w * 0.45 + k * p.w * 0.22, GROUND - 14 - hash(i + k) * 6, 2, 0, Math.PI * 2); ctx.fill();
-    }
-  }
-}
-
-function drawApples() {
-  for (var i = 0; i < APPLES.length; i++) {
-    var a = APPLES[i];
-    if (a.taken) continue;
-    var sx = a.x - camX + TRACTOR_X;
-    if (sx < -60 || sx > W + 60) continue;
-    ctx.fillStyle = '#e0453f';
-    ctx.beginPath(); ctx.arc(sx, a.y, 11, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.55)';
-    ctx.beginPath(); ctx.arc(sx - 3, a.y - 4, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#5a3b1f'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(sx, a.y - 10); ctx.lineTo(sx + 2, a.y - 17); ctx.stroke();
-    ctx.fillStyle = '#3fae6a';
-    ctx.beginPath(); ctx.ellipse(sx + 7, a.y - 16, 6, 3, -0.5, 0, Math.PI * 2); ctx.fill();
-  }
-}
-
-function drawWashStation() {
-  for (var i = 0; i < WASHES.length; i++) {
-    var w = WASHES[i];
-    var sx = w.x - camX + TRACTOR_X;
-    if (sx < -480 || sx > W + 480) continue;
-
-    var left = sx - 165, right = sx + 165, top = GROUND - 250;
-
-    ctx.fillStyle = '#4f8fb8';
-    ctx.fillRect(left, top, 18, 250);
-    ctx.fillRect(right - 18, top, 18, 250);
-
-    ctx.fillStyle = '#3b82e0';
-    ctx.beginPath(); roundRect(ctx, left - 20, top - 30, (right - left) + 40, 34, 12); ctx.fill();
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 21px "Segoe UI", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('МОЙКА', sx, top - 7);
-
-    for (var b = 0; b < 3; b++) {
-      var bx = sx - 66 + b * 66;
-      ctx.fillStyle = '#e05c8a';
-      ctx.beginPath(); ctx.arc(bx, GROUND - 128, 23, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#c94673'; ctx.lineWidth = 3;
-      for (var q = 0; q < 8; q++) {
-        var a = q * Math.PI / 4 + (spongeOn || ptr.down ? time * 4 : 0);
-        ctx.beginPath();
-        ctx.moveTo(bx + Math.cos(a) * 10, GROUND - 128 + Math.sin(a) * 10);
-        ctx.lineTo(bx + Math.cos(a) * 25, GROUND - 128 + Math.sin(a) * 25);
-        ctx.stroke();
-      }
-    }
-
-    ctx.fillStyle = 'rgba(120,190,220,.35)';
-    ctx.fillRect(left, GROUND - 8, right - left, 12);
-  }
-}
-
-function drawFarm(sx) {
-  if (sx < -420 || sx > W + 420) return;
-  var baseY = GROUND - 26;
-
-  ctx.fillStyle = '#c9563f';
-  ctx.beginPath(); roundRect(ctx, sx - 110, baseY - 150, 220, 150, 6); ctx.fill();
-
-  ctx.fillStyle = '#a8452f';
-  ctx.beginPath();
-  ctx.moveTo(sx - 126, baseY - 148);
-  ctx.lineTo(sx, baseY - 216);
-  ctx.lineTo(sx + 126, baseY - 148);
-  ctx.closePath(); ctx.fill();
-
-  ctx.fillStyle = '#f2e4c9';
-  ctx.beginPath(); roundRect(ctx, sx - 40, baseY - 110, 80, 110, 4); ctx.fill();
-  ctx.strokeStyle = '#b7864f'; ctx.lineWidth = 4;
-  ctx.beginPath(); ctx.moveTo(sx, baseY - 110); ctx.lineTo(sx, baseY); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(sx - 40, baseY - 60); ctx.lineTo(sx + 40, baseY - 60); ctx.stroke();
-
-  ctx.strokeStyle = '#7a6a55'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(sx + 96, baseY - 216); ctx.lineTo(sx + 96, baseY - 268); ctx.stroke();
-
-  var fl = Math.sin(time * 3) * 4;
-  ctx.fillStyle = '#f4c542';
-  ctx.beginPath();
-  ctx.moveTo(sx + 96, baseY - 268);
-  ctx.lineTo(sx + 136 + fl, baseY - 258);
-  ctx.lineTo(sx + 96, baseY - 246);
-  ctx.closePath(); ctx.fill();
-
-  ctx.fillStyle = 'rgba(255,255,255,.92)';
-  ctx.beginPath(); roundRect(ctx, sx - 46, baseY - 196, 92, 26, 6); ctx.fill();
-  ctx.fillStyle = '#213547';
-  ctx.font = 'bold 15px "Segoe UI", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('ФЕРМА', sx, baseY - 178);
-}
-
-function drawParticles() {
-  for (var i = 0; i < mud.length; i++) {
-    var p = mud[i];
-    ctx.globalAlpha = clamp(p.life, 0, 1);
-    ctx.fillStyle = C_DIRT;
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
-  }
-  for (var b = 0; b < bubbles.length; b++) {
-    var bb = bubbles[b];
-    ctx.globalAlpha = clamp(bb.life, 0, 1) * 0.8;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(120,190,220,.9)'; ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(bb.x, bb.y, bb.r, 0, Math.PI * 2); ctx.stroke();
-  }
-  for (var s = 0; s < sparks.length; s++) {
-    ctx.globalAlpha = clamp(sparks[s].life, 0, 1);
-    ctx.fillStyle = '#ffe9a8';
-    star(ctx, sparks[s].x, sparks[s].y, 4);
-  }
-  ctx.globalAlpha = 1;
-  for (var c = 0; c < confetti.length; c++) {
-    var cf = confetti[c];
-    ctx.globalAlpha = clamp(cf.life, 0, 1);
-    ctx.save();
-    ctx.translate(cf.x, cf.y); ctx.rotate(cf.rot);
-    ctx.fillStyle = cf.c;
-    ctx.fillRect(-4, -2.5, 8, 5);
-    ctx.restore();
-  }
-  ctx.globalAlpha = 1;
-}
-
-function drawFace(ctx, bx, by) {
-  var eyeY = by - 82;
-  var lx = bx + 64, rx = bx + 98, er = 13;
-  var look = clamp(speed / 320, -1, 1) * 4.5;
-  var blink = (time % 5.4) > 5.18;
-
-  // белки
-  ctx.fillStyle = '#ffffff';
-  ctx.strokeStyle = 'rgba(18,48,96,.6)';
-  ctx.lineWidth = 2.6;
-  ctx.beginPath(); ctx.arc(lx, eyeY, er, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.arc(rx, eyeY, er, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-
-  if (blink) {
-    ctx.strokeStyle = '#1b3a52'; ctx.lineWidth = 3.6; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(lx - 8, eyeY); ctx.lineTo(lx + 8, eyeY); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(rx - 8, eyeY); ctx.lineTo(rx + 8, eyeY); ctx.stroke();
-  } else {
-    ctx.fillStyle = '#1b2a3a';
-    ctx.beginPath(); ctx.arc(lx + look, eyeY + 2, 6.2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(rx + look, eyeY + 2, 6.2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,.95)';
-    ctx.beginPath(); ctx.arc(lx + look - 2.2, eyeY - 1, 2.2, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(rx + look - 2.2, eyeY - 1, 2.2, 0, Math.PI * 2); ctx.fill();
-  }
-
-  // брови
-  ctx.strokeStyle = '#1b3a52'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(lx - 8, eyeY - 20); ctx.quadraticCurveTo(lx, eyeY - 27, lx + 8, eyeY - 20); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(rx - 8, eyeY - 20); ctx.quadraticCurveTo(rx, eyeY - 27, rx + 8, eyeY - 20); ctx.stroke();
-
-  // улыбка
-  ctx.strokeStyle = '#1b3a52'; ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(bx + 68, by - 68);
-  ctx.quadraticCurveTo(bx + 81, by - 54, bx + 94, by - 68);
-  ctx.stroke();
-
-  // румянец
-  ctx.fillStyle = 'rgba(240,130,142,.42)';
-  ctx.beginPath(); ctx.ellipse(bx + 52, by - 64, 8.5, 5, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(bx + 110, by - 64, 8.5, 5, 0, 0, Math.PI * 2); ctx.fill();
-}
-
-function drawDirtSpots() {
-  for (var i = 0; i < spots.length; i++) {
-    var s = spots[i];
-    var a = clamp(s.a, 0, 1);
-    var r = s.r * (0.75 + 0.3 * a);
-    ctx.globalAlpha = 0.55 + 0.42 * a;
-    ctx.fillStyle = C_DIRT_D;
-    ctx.beginPath(); ctx.ellipse(s.x, s.y, r, r * 0.74, s.rot, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = C_DIRT;
-    ctx.beginPath(); ctx.ellipse(s.x, s.y, r * 0.8, r * 0.58, s.rot, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = C_DIRT_L;
-    ctx.beginPath();
-    ctx.ellipse(s.x - r * 0.2, s.y - r * 0.24, r * 0.34, r * 0.2, s.rot, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-}
-
-function drawFoam() {
-  for (var i = 0; i < foam.length; i++) {
-    var f = foam[i];
-    ctx.globalAlpha = clamp(f.life, 0, 1) * 0.85;
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(160,205,230,.9)'; ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2); ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
-}
-
-function drawJet() {
-  if (!spraying || ptr.x < 0) return;
-  var nx = TRACTOR_X + 124, ny = GROUND - 104;
-  var g = ctx.createLinearGradient(nx, ny, ptr.x, ptr.y);
-  g.addColorStop(0, 'rgba(200,235,255,.95)');
-  g.addColorStop(1, 'rgba(120,200,240,.45)');
-
-  ctx.lineCap = 'round';
-  ctx.strokeStyle = g;
-  ctx.lineWidth = 10;
-  ctx.beginPath();
-  ctx.moveTo(nx, ny);
-  ctx.quadraticCurveTo((nx + ptr.x) / 2, Math.min(ny, ptr.y) - 24, ptr.x, ptr.y);
-  ctx.stroke();
-
-  ctx.strokeStyle = 'rgba(255,255,255,.7)';
-  ctx.lineWidth = 4;
-  ctx.stroke();
-
-  for (var i = 0; i < 7; i++) {
-    var k = Math.random();
-    var bx2 = nx + (ptr.x - nx) * k;
-    var by2 = ny + (ptr.y - ny) * k - Math.sin(k * Math.PI) * 16;
-    ctx.fillStyle = 'rgba(225,245,255,.9)';
-    ctx.beginPath();
-    ctx.arc(bx2 + (Math.random() - 0.5) * 16, by2 + (Math.random() - 0.5) * 16,
-            1.5 + Math.random() * 2.6, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  ctx.fillStyle = 'rgba(150,210,240,.28)';
-  ctx.beginPath(); ctx.ellipse(ptr.x, GROUND - 6, 36, 8, 0, 0, Math.PI * 2); ctx.fill();
-}
-
-function drawSponge() {
-  if (!spongeOn) return;
-  if (ptr.x < 0) return;
-  ctx.save();
-  ctx.translate(ptr.x + 16, ptr.y + 12);
-  ctx.rotate(-0.35);
-  // поролон
-  ctx.fillStyle = '#f4d35e';
-  ctx.beginPath(); roundRect(ctx, -30, -16, 60, 32, 9); ctx.fill();
-  ctx.fillStyle = '#e0b93c';
-  ctx.beginPath(); roundRect(ctx, -30, 4, 60, 12, 6); ctx.fill();
-  // абразивная сторона
-  ctx.fillStyle = '#5fa8d3';
-  ctx.beginPath(); roundRect(ctx, -30, -18, 60, 10, 5); ctx.fill();
-  // поры
-  ctx.fillStyle = 'rgba(200,160,60,.5)';
-  var hx = [-18, -4, 10, 20], hy = [-8, -2, -10, 0];
-  for (var i = 0; i < 4; i++) {
-    ctx.beginPath(); ctx.arc(hx[i], hy[i], 2.2, 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.restore();
-}
-
-function star(ctx, x, y, r) {
-  ctx.beginPath();
-  for (var i = 0; i < 8; i++) {
-    var a = i * Math.PI / 4;
-    var rr = i % 2 ? r * 0.4 : r;
-    ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
-  }
-  ctx.closePath(); ctx.fill();
-}
-
-function drawSmoke() {
-  var puff = (time * 1.3) % 1;
-  ctx.globalAlpha = 0.35 * (1 - puff);
-  ctx.fillStyle = '#ffffff';
-  ctx.beginPath();
-  ctx.arc(TRACTOR_X + 26, GROUND - 234 - puff * 46, 7 + puff * 13, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.globalAlpha = 1;
-}
-
-function render() {
-  ctx.clearRect(0, 0, W, H);
-  drawSky();
-  drawHills();
-  drawField();
-  drawPuddles();
-  drawWashStation();
-
-  if (task) drawFarm(taskTarget - camX + TRACTOR_X);
-
-  drawApples();
-  drawTrailer(ctx, TRACTOR_X, GROUND, wheelAng, task ? task.animals : []);
-  drawSmoke();
-  drawTractor(ctx, TRACTOR_X, GROUND, wheelAng, dirt);
-  drawDirtSpots();
-  drawFoam();
-  drawParticles();
-  drawJet();
-  drawSponge();
-
-  if (msgTimer > 0) {
-    ctx.save();
-    ctx.globalAlpha = clamp(msgTimer, 0, 1);
-    ctx.fillStyle = 'rgba(33,53,71,.86)';
-    ctx.beginPath(); roundRect(ctx, W / 2 - 210, 250, 420, 62, 16); ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold 24px "Segoe UI", sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(msgText, W / 2, 290);
-    ctx.restore();
-  }
-}
 
 /* ---------------- раскраска ---------------- */
 var paintCv = document.getElementById('paint');
@@ -1602,7 +2083,9 @@ document.getElementById('btnSave').addEventListener('click', function () {
   a.click();
 });
 
-/* ---------------- вкладки ---------------- */
+
+
+/* ================= вкладки и цикл ================= */
 var tabDrive = document.getElementById('tabDrive');
 var tabPaint = document.getElementById('tabPaint');
 var stageDrive = document.getElementById('stageDrive');
@@ -1616,9 +2099,8 @@ function showDrive() {
   tabDrive.className = 'tab on'; tabPaint.className = 'tab';
   stageDrive.className = 'stage'; stagePaint.className = 'stage off';
   padDrive.className = 'pad'; palette.className = 'palette off'; tools.className = 'tools off';
-  foot.innerHTML = '<kbd>←</kbd> <kbd>→</kbd> — ехать · <kbd>E</kbd> — мойка · <kbd>Space</kbd> — бибикнуть';
+  foot.innerHTML = '<kbd>←</kbd> <kbd>→</kbd> — ехать · <kbd>E</kbd> — губка · <kbd>Q</kbd> — шланг · <kbd>Space</kbd> — бибикнуть';
 }
-
 function showPaint() {
   tabPaint.className = 'tab on'; tabDrive.className = 'tab';
   stagePaint.className = 'stage'; stageDrive.className = 'stage off';
@@ -1629,20 +2111,35 @@ function showPaint() {
 tabDrive.addEventListener('click', showDrive);
 tabPaint.addEventListener('click', showPaint);
 
-/* ---------------- цикл ---------------- */
+syncWashButtons();
+syncFuelButton();
+var mb = document.getElementById('btnMusic');
+if (mb) mb.textContent = MUSIC.on ? '🔊' : '🔇';
+openMenu();
+
 var last = 0;
 function loop(ts) {
   if (!last) last = ts;
   var dt = Math.min(0.05, (ts - last) / 1000);
   last = ts;
-  update(dt);
-  render();
+  if (!menuOpen) {
+    try {
+      update(dt);
+      render();
+    } catch (e) {
+      if (!window.__frameErr) {
+        window.__frameErr = true;
+        var box = document.getElementById('err');
+        if (box) {
+          box.style.display = 'block';
+          box.textContent = 'Ошибка кадра: ' + (e && e.message ? e.message : e);
+        }
+      }
+    }
+  }
   requestAnimationFrame(loop);
 }
 
-syncMusicButton();
-syncWashButtons();
-startTask(0);
 render();
 requestAnimationFrame(loop);
 </script>
